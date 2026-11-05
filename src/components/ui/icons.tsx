@@ -66,7 +66,7 @@ export const Play = ({ size = 14 }: { size?: number }) => (
 );
 
 /** Rank Orbit mark: a small red geometric mark. */
-export const AgencyMark = ({ size = 18, color = '#E1251B' }: { size?: number; color?: string }) => (
+export const AgencyMark = ({ size = 18, color = '#B227FF' }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 18 18" aria-hidden focusable={false}>
     <rect x="0" y="0" width="8" height="8" fill={color} />
     <rect x="10" y="0" width="8" height="8" fill="none" stroke={color} strokeWidth="1.5" />

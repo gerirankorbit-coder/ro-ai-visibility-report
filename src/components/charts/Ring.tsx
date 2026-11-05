@@ -4,7 +4,7 @@ import { FONT, T } from '@/lib/tokens';
 import { arcPath } from './arc';
 import { ChartFrame, useTheme, type Tone } from './common';
 
-/** Ring: 1.5px track + thick butt-capped arc, value centered (Inter Tight). */
+/** Ring: 1.5px track + thick butt-capped arc, value centered (Montserrat). */
 export function Ring({
   value,
   size = 168,
