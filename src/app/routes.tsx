@@ -4,7 +4,6 @@ import { LoadingPage, MessagePage } from '@/features/report/StatusPages';
 import { TextLink } from '@/components/ui';
 
 const DemoReport = lazy(() => import('./DemoReport'));
-const ClientReport = lazy(() => import('./ClientReport'));
 const Styleguide = lazy(() => import('./styleguide/Styleguide'));
 const StyleguideCharts = lazy(() => import('./styleguide/StyleguideCharts'));
 const AdminApp = lazy(() => import('@/features/admin/AdminApp'));
@@ -23,7 +22,6 @@ export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/admin" replace /> },
   { path: '/demo', element: <Navigate to="/demo/summit/overview" replace /> },
   { path: '/demo/:client/:section?', element: s(<DemoReport />) },
-  { path: '/r/:token/:section?', element: s(<ClientReport />) },
   { path: '/styleguide', element: s(<Styleguide />) },
   { path: '/styleguide/charts', element: s(<StyleguideCharts />) },
   { path: '/admin/*', element: s(<AdminApp />) },

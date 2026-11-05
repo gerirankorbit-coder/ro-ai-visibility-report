@@ -1,39 +1,7 @@
-import { ClientSchema, ReportSchema, ShareLinkSchema, type Client, type ClientInput, type Month, type MonthInput, type Report, type ShareLink } from '@/types/schema';
+import { ClientSchema, type Client, type ClientInput, type Month, type MonthInput } from '@/types/schema';
 import type { Json } from '@/types/database';
 import { LOGO_BUCKET, sb } from './supabase';
 import { normalizeMonth } from './defaults';
-
-/* ------------------------------------------------------------------ */
-/* Public report                                                       */
-/* ------------------------------------------------------------------ */
-
-function parseReport(raw: unknown): Report | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as { client?: unknown; months?: unknown[] };
-  if (!r.client) return null;
-  return ReportSchema.parse({
-    client: r.client,
-    months: (r.months ?? []).map((m) => normalizeMonth(m as Record<string, unknown>)),
-  });
-}
-
-/**
- * Loads a report by share token. Prefers the `report` Edge Function (adds a 1-hour
- * signed logo URL); falls back to the `get_report` RPC directly. Returns null when the
- * token does not exist or has been revoked.
- */
-export async function fetchReport(token: string): Promise<Report | null> {
-  const client = sb();
-  try {
-    const { data, error } = await client.functions.invoke<unknown>('report', { body: { token } });
-    if (!error) return parseReport(data);
-  } catch {
-    /* fall through to RPC */
-  }
-  const { data, error } = await client.rpc('get_report', { p_token: token });
-  if (error) throw error;
-  return parseReport(data);
-}
 
 /* ------------------------------------------------------------------ */
 /* Staff: auth                                                         */
@@ -52,24 +20,20 @@ export async function isStaff(): Promise<boolean> {
 export interface ClientListRow {
   client: Client;
   latest: Month | null;
-  link: ShareLink | null;
 }
 
 export async function listClients(): Promise<ClientListRow[]> {
   const c = sb();
-  const [clients, months, links] = await Promise.all([
+  const [clients, months] = await Promise.all([
     c.from('clients').select('*').order('name'),
     c.from('months').select('*').order('period', { ascending: false }),
-    c.from('share_links').select('*').is('revoked_at', null).order('created_at', { ascending: false }),
   ]);
   if (clients.error) throw clients.error;
   if (months.error) throw months.error;
-  if (links.error) throw links.error;
   return clients.data.map((row) => {
     const client = ClientSchema.parse(row);
     const m = months.data.filter((x) => x.client_id === client.id).sort((a, b) => b.period.localeCompare(a.period))[0];
-    const l = links.data.find((x) => x.client_id === client.id);
-    return { client, latest: m ? normalizeMonth(m) : null, link: l ? ShareLinkSchema.parse(l) : null };
+    return { client, latest: m ? normalizeMonth(m) : null };
   });
 }
 
@@ -156,41 +120,6 @@ export async function updateMonth(id: string, m: MonthInput): Promise<Month> {
 export async function deleteMonth(id: string): Promise<void> {
   const { error } = await sb().from('months').delete().eq('id', id);
   if (error) throw error;
-}
-
-/* ------------------------------------------------------------------ */
-/* Staff: share links                                                  */
-/* ------------------------------------------------------------------ */
-
-/** 144 bits of randomness, base64url → 24 chars. */
-export function generateToken(): string {
-  const bytes = new Uint8Array(18);
-  crypto.getRandomValues(bytes);
-  let s = '';
-  bytes.forEach((b) => (s += String.fromCharCode(b)));
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-export async function listShareLinks(clientId: string): Promise<ShareLink[]> {
-  const { data, error } = await sb().from('share_links').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
-  if (error) throw error;
-  return data.map((r) => ShareLinkSchema.parse(r));
-}
-
-export async function createShareLink(clientId: string): Promise<ShareLink> {
-  const { data, error } = await sb().from('share_links').insert({ token: generateToken(), client_id: clientId }).select('*').single();
-  if (error) throw error;
-  return ShareLinkSchema.parse(data);
-}
-
-export async function revokeShareLinks(clientId: string): Promise<void> {
-  const { error } = await sb().from('share_links').update({ revoked_at: new Date().toISOString() }).eq('client_id', clientId).is('revoked_at', null);
-  if (error) throw error;
-}
-
-export function shareUrl(token: string): string {
-  const origin = import.meta.env.VITE_PUBLIC_SITE_URL || window.location.origin;
-  return `${origin.replace(/\/$/, '')}/r/${token}`;
 }
 
 /* ------------------------------------------------------------------ */

@@ -128,12 +128,3 @@ export const ReportSchema = z.object({
   months: z.array(MonthSchema),
 });
 export type Report = z.infer<typeof ReportSchema>;
-
-export const ShareLinkSchema = z.object({
-  token: z.string(),
-  client_id: z.string(),
-  created_at: z.string(),
-  revoked_at: z.string().nullable(),
-  last_viewed_at: z.string().nullable(),
-});
-export type ShareLink = z.infer<typeof ShareLinkSchema>;

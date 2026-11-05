@@ -9,14 +9,13 @@ import { AdminLayout } from './AdminLayout';
 import { BusinessInfoForm } from './BusinessInfoForm';
 import { ExportPdfButton } from './ExportPdfButton';
 import { MonthEditor } from './MonthEditor';
-import { ShareLinkPanel } from './ShareLinkPanel';
 
-type Tab = 'info' | 'months' | 'share';
+type Tab = 'info' | 'months';
 
 export default function ClientEditor() {
   const { id = '' } = useParams();
   const [params, setParams] = useSearchParams();
-  const tab = (['info', 'months', 'share'].includes(params.get('tab') ?? '') ? params.get('tab') : 'months') as Tab;
+  const tab = (['info', 'months'].includes(params.get('tab') ?? '') ? params.get('tab') : 'months') as Tab;
   const client = useQuery({ queryKey: ['client', id], queryFn: () => getClient(id) });
   const months = useQuery({ queryKey: ['months', id], queryFn: () => listMonths(id) });
   const qc = useQueryClient();
@@ -77,7 +76,6 @@ export default function ClientEditor() {
         items={[
           { value: 'info', title: 'Business info', description: 'Name, address, services, logo, hours' },
           { value: 'months', title: 'Monthly data', description: 'Metrics, listings, work, community' },
-          { value: 'share', title: 'Share link', description: 'Private client link and access' },
         ]}
       />
       <div role="tabpanel" id="editor-panel" aria-labelledby={`editor-tab-${tab}`} className="pt-2">
@@ -102,10 +100,8 @@ export default function ClientEditor() {
               )}
             </div>
           </>
-        ) : tab === 'months' ? (
-          <MonthEditor key={c.id} client={c} months={ms} />
         ) : (
-          <ShareLinkPanel clientId={c.id} />
+          <MonthEditor key={c.id} client={c} months={ms} />
         )}
       </div>
     </AdminLayout>

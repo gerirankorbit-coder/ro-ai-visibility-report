@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { Month, Report } from '@/types/schema';
 import { monthKey } from '@/lib/format';
 
-export type ReportMode = 'demo' | 'client' | 'preview';
+export type ReportMode = 'demo' | 'preview';
 
 export interface ReportCtx {
   report: Report;
@@ -15,7 +15,7 @@ export interface ReportCtx {
   history: Month[];
   currentKey: string;
   setMonth: (key: string) => void;
-  /** Base path for section links, e.g. `/r/abc` or `/demo/summit`. */
+  /** Base path for section links, e.g. `/admin/clients/:id/preview` or `/demo/summit`. */
   basePath: string;
   /** Link to a section, preserving the month query. */
   href: (slug: string) => string;

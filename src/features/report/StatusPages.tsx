@@ -44,9 +44,5 @@ export function LoadingPage() {
 }
 
 export function FirstReportPreparing({ clientName }: { clientName: string }) {
-  return <MessagePage eyebrow={clientName} title="Your first report is being prepared" rest="We are completing the baseline audit of your listings, entity signals and AI engine presence. Your first monthly report will appear at this link." />;
-}
-
-export function LinkInactive() {
-  return <MessagePage eyebrow="Report link" title="This link is no longer active" rest="Ask your Rank Orbit account manager for a new link to your AI visibility report." />;
+  return <MessagePage eyebrow={clientName} title="Your first report is being prepared" rest="We are completing the baseline audit of your listings, entity signals and AI engine presence. Publish a month to see the first report here." />;
 }

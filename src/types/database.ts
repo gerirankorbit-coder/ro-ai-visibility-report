@@ -80,12 +80,6 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['months']['Insert']>;
         Relationships: [];
       };
-      share_links: {
-        Row: { token: string; client_id: string; created_at: string; revoked_at: string | null; last_viewed_at: string | null };
-        Insert: { token: string; client_id: string; created_at?: string; revoked_at?: string | null; last_viewed_at?: string | null };
-        Update: Partial<Database['public']['Tables']['share_links']['Insert']>;
-        Relationships: [];
-      };
       staff: {
         Row: { user_id: string; role: string | null };
         Insert: { user_id: string; role?: string | null };
@@ -95,7 +89,6 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
-      get_report: { Args: { p_token: string }; Returns: Json };
       is_staff: { Args: Record<string, never>; Returns: boolean };
     };
     Enums: Record<string, never>;

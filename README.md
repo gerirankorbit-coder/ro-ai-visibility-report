@@ -1,8 +1,9 @@
 # Rank Orbit — AI Visibility Dashboard
 
 A client-facing AI Search / AI Overview visibility report for Rank Orbit LLC. Staff enter
-monthly numbers in the Admin; clients see a read-only report through a private share link.
-Every section can be exported as a 4320px-wide PNG, and staff can export the full report as a PDF.
+monthly numbers in the Admin and view the finished report in the staff preview. Clients receive the
+report as files: every section exports as a 4320px-wide PNG, and the full report exports as one PDF.
+There are no public client links. Only signed-in staff can view reports (plus the local demo).
 
 **Stack:** React 18 · Vite · TypeScript (strict) · Tailwind CSS v3 · React Router v6 ·
 TanStack Query · Zod · Supabase (Postgres, Auth, Storage) · hand-built SVG charts ·
@@ -12,12 +13,11 @@ TanStack Query · Zod · Supabase (Postgres, Auth, Storage) · hand-built SVG ch
 
 | Route | What it is |
 |---|---|
-| `/r/:token/:section?` | Client report (sections: `overview`, `signals`, `community`, `progress`, `profile`). `?m=YYYY-MM` picks a month. |
-| `/demo/:client/:section?` | The same report with local demo data (`summit`, `harbor`). No Supabase needed. |
+| `/demo/:client/:section?` | The report with local demo data (`summit`, `harbor`). Sections: `overview`, `signals`, `community`, `progress`, `profile`. `?m=YYYY-MM` picks a month. No Supabase needed. |
 | `/admin/login` | Staff sign-in (email + password). |
 | `/admin` | Client list. |
-| `/admin/clients/:id` | Client editor: Business info · Monthly data · Share link. |
-| `/admin/clients/:id/preview/:section?` | Staff preview of the client report, including draft months. |
+| `/admin/clients/:id` | Client editor: Business info · Monthly data. |
+| `/admin/clients/:id/preview/:section?` | The client report for staff, including draft months. Screenshot and PDF export live here. |
 | `/styleguide`, `/styleguide/charts` | Design system primitives and chart gallery. |
 
 ## Local setup
@@ -37,8 +37,6 @@ copy .env.example .env.local
 ```
 VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
-# Optional. The origin used in share links. Defaults to the current site.
-VITE_PUBLIC_SITE_URL=https://reports.rankorbit.com
 ```
 
 ```bash
@@ -69,39 +67,18 @@ npx supabase db push
 
 The migration creates:
 
-- Tables `clients`, `months`, `share_links` and `staff`, with RLS turned on for all of them.
-  Only users listed in `staff` can read or write clients, months and share links.
+- Tables `clients`, `months` and `staff`, with RLS turned on for all of them.
+  Only users listed in `staff` can read or write clients and months.
   Anonymous users have no table access at all.
-- `get_report(p_token)`, a `security definer` RPC. It checks that the token exists and is not
-  revoked, updates `last_viewed_at`, and returns the client and its **published** months.
-  It returns `null` for unknown or revoked tokens. The app then shows "This link is no longer active".
 - `is_staff()`, used by the policies and by the Admin login check.
 - A private Storage bucket `logos` (PNG or SVG, 2 MB max) that only staff can access.
 
-### 2. Deploy the `report` Edge Function (for logos)
-
-The bucket is private, so client logos need a signed URL. The `report` function calls `get_report`
-and adds a 1-hour signed logo URL:
-
-```bash
-npx supabase functions deploy report --no-verify-jwt
-```
-
-If the function is not deployed, the app calls the RPC directly. The report still works, and the
-business profile shows the initials square instead of the logo.
-
-### 3. Seed the demo clients (optional)
+### 2. Seed the demo clients (optional)
 
 Run `supabase/seed.sql` in the SQL Editor. It adds the two demo clients from the mockup
-(Summit Peak Plumbing & Drain with 5 months, and Harbor Line Dental Studio with 3 months), plus two
-demo share links:
+(Summit Peak Plumbing & Drain with 5 months, and Harbor Line Dental Studio with 3 months).
 
-- `/r/demo-summit-peak-plumbing-2026`
-- `/r/demo-harbor-line-dental-2026`
-
-These tokens are public in this repository. **Revoke them, or don't run the seed, in production.**
-
-### 4. Create the first staff user
+### 3. Create the first staff user
 
 1. In Supabase, go to **Authentication → Users → Add user**. Create the user with an email and
    password, and tick "Auto confirm".
@@ -121,10 +98,9 @@ accounts should only be created by an owner.
 
 1. Import the repository in Vercel. The framework preset is **Vite**: the build command is
    `npm run build` and the output directory is `dist`.
-2. Add the environment variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` and, optionally,
-   `VITE_PUBLIC_SITE_URL`.
+2. Add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 3. Deploy. `vercel.json` rewrites every path to `index.html`, so deep links such as
-   `/r/<token>/signals` work.
+   `/admin/clients/<id>/preview/signals` work.
 4. In Supabase, go to **Authentication → URL Configuration** and add your Vercel domain.
 
 ## How things work
@@ -157,6 +133,13 @@ accounts should only be created by an owner.
 - **Export full report (PDF)** is in the Admin client header and in the staff preview. It captures
   all 5 sections at pixelRatio 2 and builds one PDF page per section. Each page is as tall as its section.
 
+### Sending a report to a client
+
+1. Publish the month in **Monthly data**.
+2. Open **Preview client view** and pick the month. Press **Screenshot** on each section you need,
+   or use **Export full report (PDF)**.
+3. Send the PNG or PDF to the client.
+
 ### Admin autosave
 
 The business info and monthly data forms autosave 600ms after the last change. The status reads
@@ -174,16 +157,15 @@ community actions, reputation, communities reached. Internal labels such as "war
 
 ```
 src/
-  app/                routes, demo + client report routes, styleguide
+  app/                routes, demo report route, styleguide
   components/ui/      primitives (Button, Tabs, SectionLabel, IndexTable, Kpi, Field, Slider…)
   components/charts/  Gauge, Ring, LineChart, StackedBars, Radar, Heatmap, Funnel, Sparkline, HBar
   features/report/    report context, frame, 5 sections, screenshot
-  features/admin/     auth, client list, editor, month editor, share links, PDF export
+  features/admin/     auth, client list, editor, month editor, PDF export
   lib/                supabase client, api, metrics, export, format, tokens, demo data
   types/              Zod schemas + Supabase types
 supabase/
   migrations/0001_init.sql
-  functions/report/   Edge Function (signed logo URL)
   seed.sql            generated by `npm run seed:sql`
 scripts/generate-seed.ts
 ```

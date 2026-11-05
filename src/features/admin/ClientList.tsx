@@ -58,7 +58,6 @@ export default function ClientList() {
                 ),
             },
             { key: 'ai', header: 'AI Readiness', render: (r) => <span className="t-mono">{r.latest ? aiReadiness(r.latest) : '—'}</span> },
-            { key: 'l', header: 'Share link', render: (r) => (r.link ? <StatusChip tone="good">Active</StatusChip> : <StatusChip tone="muted">None</StatusChip>) },
             {
               key: 'o',
               header: <span className="sr-only">Open</span>,
