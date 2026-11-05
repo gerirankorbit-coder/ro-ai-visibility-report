@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { AgencyMark } from '@/components/ui';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from './auth';
+import { signOut } from '@/lib/api';
 
 export function AdminLayout({ children, crumbs }: { children: ReactNode; crumbs?: ReactNode }) {
-  const { session } = useAuth();
   return (
     <div className="admin min-h-screen bg-paper text-[13px]">
       <header className="sticky top-0 z-40 border-b border-line bg-paper/[0.92] backdrop-blur-md">
@@ -27,9 +25,12 @@ export function AdminLayout({ children, crumbs }: { children: ReactNode; crumbs?
             <Link to="/demo" className="text-ink-2 hover:text-ink">
               Demo
             </Link>
-            {session ? <span className="t-mono hidden text-muted md:inline">{session.user.email}</span> : null}
-            <button type="button" className="text-ink underline underline-offset-4" onClick={() => supabase?.auth.signOut()}>
-              Sign out
+            <span className="t-meta hidden items-center gap-1.5 text-muted md:inline-flex">
+              <span className="inline-block h-[6px] w-[6px] bg-good" aria-hidden />
+              Private session
+            </span>
+            <button type="button" className="text-ink underline underline-offset-4" onClick={() => void signOut()}>
+              Lock
             </button>
           </div>
         </div>
@@ -38,4 +39,3 @@ export function AdminLayout({ children, crumbs }: { children: ReactNode; crumbs?
     </div>
   );
 }
-

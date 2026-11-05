@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { getClient, listMonths, signedLogoUrl } from '@/lib/api';
+import { getClient, listMonths, logoDataUrl } from '@/lib/api';
 import { ReportProvider } from '@/features/report/ReportContext';
 import { ReportShell } from '@/features/report/ReportShell';
 import { FirstReportPreparing, LoadingPage, MessagePage } from '@/features/report/StatusPages';
@@ -30,7 +30,7 @@ export default function AdminPreview() {
     queryKey: ['preview', id],
     queryFn: async () => {
       const [client, months] = await Promise.all([getClient(id), listMonths(id)]);
-      return { client: { ...client, logo_url: await signedLogoUrl(client.logo_path) }, months };
+      return { client: { ...client, logo_url: await logoDataUrl(client.logo_path) }, months };
     },
   });
   if (q.isPending) return <LoadingPage />;

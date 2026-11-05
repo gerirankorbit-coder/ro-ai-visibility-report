@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Checkbox, Field, TagInput, TextInput, inputCls, useToast } from '@/components/ui';
-import { signedLogoUrl, updateClientRow, uploadLogo, validateLogo } from '@/lib/api';
+import { logoDataUrl, updateClientRow, uploadLogo, validateLogo } from '@/lib/api';
 import { clientToInput } from '@/lib/defaults';
 import { initials } from '@/lib/format';
 import type { Client, ClientInput, HoursDay } from '@/types/schema';
@@ -34,7 +34,7 @@ export function BusinessInfoForm({ client }: { client: Client }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void signedLogoUrl(draft.logo_path).then(setLogoUrl);
+    void logoDataUrl(draft.logo_path).then(setLogoUrl);
   }, [draft.logo_path]);
 
   const state = useAutosave(draft, async (v) => {

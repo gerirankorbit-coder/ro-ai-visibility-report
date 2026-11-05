@@ -32,7 +32,13 @@ export default function ClientList() {
           {create.isPending ? 'Creating…' : 'New client'}
         </Button>
       </div>
-      {q.isError ? <p className="text-bad">Could not load clients: {(q.error as Error).message}</p> : null}
+      {q.isError ? (
+        <p className="border-t border-line py-10 text-bad">
+          {(q.error as Error).message === 'database_not_configured'
+            ? 'The database is not connected. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the server (see README).'
+            : `Could not load clients: ${(q.error as Error).message}`}
+        </p>
+      ) : null}
       {q.data && q.data.length === 0 ? <p className="border-t border-line py-10 text-muted">No clients yet. Create the first one.</p> : null}
       {q.data && q.data.length > 0 ? (
         <IndexTable<ClientListRow>

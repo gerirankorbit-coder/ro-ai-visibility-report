@@ -1,20 +1,44 @@
+/**
+ * Browser data layer. All reads and writes go to the private /api/rpc endpoint, which checks the
+ * session cookie on every call and talks to Supabase with a server-only key. The browser never
+ * holds a database key.
+ */
 import { ClientSchema, type Client, type ClientInput, type Month, type MonthInput } from '@/types/schema';
-import type { Json } from '@/types/database';
-import { LOGO_BUCKET, sb } from './supabase';
 import { normalizeMonth } from './defaults';
 
-/* ------------------------------------------------------------------ */
-/* Staff: auth                                                         */
-/* ------------------------------------------------------------------ */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
+}
 
-export async function isStaff(): Promise<boolean> {
-  const { data, error } = await sb().rpc('is_staff');
-  if (error) return false;
-  return Boolean(data);
+async function rpc<T>(op: string, args: Record<string, unknown> = {}): Promise<T> {
+  const res = await fetch('/api/rpc', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ op, ...args }),
+  });
+  if (res.status === 401) {
+    // Session expired or password changed: reload to show the password screen.
+    window.location.reload();
+    throw new ApiError('Signed out', 401);
+  }
+  const body = (await res.json().catch(() => ({}))) as { data?: T; error?: string; details?: string[] };
+  if (!res.ok) throw new ApiError(body.details?.length ? `${body.error}: ${body.details.join('; ')}` : (body.error ?? `Request failed (${res.status})`), res.status);
+  return body.data as T;
+}
+
+export async function signOut(): Promise<void> {
+  await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
+  window.location.href = '/';
 }
 
 /* ------------------------------------------------------------------ */
-/* Staff: clients                                                      */
+/* Clients                                                             */
 /* ------------------------------------------------------------------ */
 
 export interface ClientListRow {
@@ -23,122 +47,71 @@ export interface ClientListRow {
 }
 
 export async function listClients(): Promise<ClientListRow[]> {
-  const c = sb();
-  const [clients, months] = await Promise.all([
-    c.from('clients').select('*').order('name'),
-    c.from('months').select('*').order('period', { ascending: false }),
-  ]);
-  if (clients.error) throw clients.error;
-  if (months.error) throw months.error;
-  return clients.data.map((row) => {
+  const [clients, months] = await Promise.all([rpc<unknown[]>('clients.list'), rpc<Array<Record<string, unknown>>>('months.listAll')]);
+  return clients.map((row) => {
     const client = ClientSchema.parse(row);
-    const m = months.data.filter((x) => x.client_id === client.id).sort((a, b) => b.period.localeCompare(a.period))[0];
+    const m = months.filter((x) => x.client_id === client.id).sort((a, b) => String(b.period).localeCompare(String(a.period)))[0];
     return { client, latest: m ? normalizeMonth(m) : null };
   });
 }
 
 export async function getClient(id: string): Promise<Client> {
-  const { data, error } = await sb().from('clients').select('*').eq('id', id).single();
-  if (error) throw error;
-  return ClientSchema.parse(data);
+  return ClientSchema.parse(await rpc('clients.get', { id }));
 }
 
 export async function createClientRow(input: ClientInput): Promise<Client> {
-  const { data, error } = await sb()
-    .from('clients')
-    .insert({ ...input, hours: input.hours as unknown as Json })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return ClientSchema.parse(data);
+  return ClientSchema.parse(await rpc('clients.create', { input }));
 }
 
 export async function updateClientRow(id: string, input: ClientInput): Promise<Client> {
-  const { data, error } = await sb()
-    .from('clients')
-    .update({ ...input, hours: input.hours as unknown as Json })
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return ClientSchema.parse(data);
+  return ClientSchema.parse(await rpc('clients.update', { id, input }));
 }
 
 export async function deleteClientRow(id: string): Promise<void> {
-  const { error } = await sb().from('clients').delete().eq('id', id);
-  if (error) throw error;
+  await rpc('clients.delete', { id });
 }
 
 /* ------------------------------------------------------------------ */
-/* Staff: months                                                       */
+/* Months                                                              */
 /* ------------------------------------------------------------------ */
 
 export async function listMonths(clientId: string): Promise<Month[]> {
-  const { data, error } = await sb().from('months').select('*').eq('client_id', clientId).order('period');
-  if (error) throw error;
-  return data.map((r) => normalizeMonth(r));
+  return (await rpc<Array<Record<string, unknown>>>('months.list', { clientId })).map((r) => normalizeMonth(r));
 }
 
-const monthPayload = (m: MonthInput) => ({
-  period: m.period,
-  published: m.published,
-  nap: m.nap,
-  entity: m.entity,
-  schema_cov: m.schema_cov,
-  knowledge: m.knowledge,
-  mentions: m.mentions,
-  nap_fields: m.nap_fields as unknown as Json,
-  entity_parts: m.entity_parts as unknown as Json,
-  engines: m.engines as unknown as Json,
-  work: m.work as unknown as Json,
-  sources: m.sources as unknown as Json,
-  forum: m.forum as unknown as Json,
-  note: m.note,
-});
-
-export async function createMonth(clientId: string, m: MonthInput): Promise<Month> {
-  const { data, error } = await sb()
-    .from('months')
-    .insert({ client_id: clientId, ...monthPayload(m) })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return normalizeMonth(data);
+export async function createMonth(clientId: string, input: MonthInput): Promise<Month> {
+  return normalizeMonth(await rpc<Record<string, unknown>>('months.create', { clientId, input }));
 }
 
-export async function updateMonth(id: string, m: MonthInput): Promise<Month> {
-  const { data, error } = await sb()
-    .from('months')
-    .update({ ...monthPayload(m), updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return normalizeMonth(data);
+export async function updateMonth(id: string, input: MonthInput): Promise<Month> {
+  return normalizeMonth(await rpc<Record<string, unknown>>('months.update', { id, input }));
 }
 
 export async function deleteMonth(id: string): Promise<void> {
-  const { error } = await sb().from('months').delete().eq('id', id);
-  if (error) throw error;
+  await rpc('months.delete', { id });
 }
 
 /* ------------------------------------------------------------------ */
-/* Staff: logos                                                        */
+/* Logos (private bucket, served as data URLs through the API)         */
 /* ------------------------------------------------------------------ */
+
+async function fileToBase64(file: File): Promise<string> {
+  const url = await new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result));
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+  return url.slice(url.indexOf(',') + 1);
+}
 
 export async function uploadLogo(clientId: string, file: File): Promise<string> {
-  const ext = file.type === 'image/svg+xml' ? 'svg' : 'png';
-  const path = `${clientId}/logo-${Date.now()}.${ext}`;
-  const { error } = await sb().storage.from(LOGO_BUCKET).upload(path, file, { contentType: file.type, upsert: true, cacheControl: '3600' });
-  if (error) throw error;
-  return path;
+  return rpc<string>('logo.upload', { clientId, contentType: file.type, base64: await fileToBase64(file) });
 }
 
-export async function signedLogoUrl(path: string | null): Promise<string | null> {
+export async function logoDataUrl(path: string | null): Promise<string | null> {
   if (!path) return null;
-  const { data, error } = await sb().storage.from(LOGO_BUCKET).createSignedUrl(path, 3600);
-  if (error) return null;
-  return data.signedUrl;
+  return rpc<string | null>('logo.get', { path }).catch(() => null);
 }
 
 /** Validate a logo file: PNG or SVG, raster at least 512px on the short side. */
