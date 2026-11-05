@@ -4,29 +4,32 @@
  * Keep in sync with :root in src/styles/index.css.
  */
 export const T = {
-  paper: '#F4F4F2',
+  paper: '#FFFFFF',
   white: '#FFFFFF',
+  panel: '#F7F7F8',
   ink: '#0A0A0A',
-  ink2: '#3B3B3B',
-  muted: '#8C8C8C',
-  ghost: '#BDBDBD',
-  line: '#E3E3E0',
+  ink2: '#3F3F46',
+  muted: '#71717A',
+  ghost: '#A1A1AA',
+  line: '#E4E4E7',
   black: '#000000',
-  black2: '#0E0E0E',
-  lineD: '#222222',
-  mutedD: '#8A8A8A',
-  red: '#E1251B',
-  ember1: '#2A0700',
-  ember2: '#8A1E04',
-  ember3: '#E2550F',
-  good: '#1F8A4C',
-  warn: '#B7791F',
-  bad: '#C0262D',
+  black2: '#18181B',
+  lineD: '#27272A',
+  mutedD: '#A1A1AA',
+  /** Brand purple (gradient end). */
+  accent: '#B227FF',
+  /** Brand cyan (gradient start); too light for text or thin lines on white. */
+  cyan: '#30FEFE',
+  /** Readable cyan for lines and markers on white. */
+  cyanInk: '#0E9FC6',
+  good: '#15803D',
+  warn: '#CE6C01',
+  bad: '#C70509',
   /** Comparison / previous series. */
-  compare: '#9A9A9A',
-  series3: '#6E6E6E',
-  series4: '#B5B5B5',
-  ghostDark: '#5A5A5A',
+  compare: '#A1A1AA',
+  series3: '#0E9FC6',
+  series4: '#0A0A0A',
+  ghostDark: '#52525B',
 } as const;
 
 export type Tone = 'light' | 'dark';
@@ -39,7 +42,7 @@ export function chartTheme(tone: Tone = 'light') {
         compare: '#6A6A6A',
         s3: '#9A9A9A',
         s4: '#4A4A4A',
-        accent: T.red,
+        accent: T.accent,
         grid: T.lineD,
         track: T.lineD,
         axis: T.mutedD,
@@ -47,11 +50,11 @@ export function chartTheme(tone: Tone = 'light') {
         bg: T.black,
       }
     : {
-        main: T.ink,
+        main: T.accent,
         compare: T.compare,
         s3: T.series3,
         s4: T.series4,
-        accent: T.red,
+        accent: T.accent,
         grid: T.line,
         track: T.line,
         axis: T.muted,
@@ -62,7 +65,7 @@ export function chartTheme(tone: Tone = 'light') {
 export type ChartTheme = ReturnType<typeof chartTheme>;
 
 export const FONT = {
-  display: "'Inter Tight Variable', 'Inter Tight', Inter, system-ui, sans-serif",
-  sans: "'Inter Variable', Inter, system-ui, sans-serif",
-  mono: "'Geist Mono', ui-monospace, Menlo, monospace",
+  display: "'Montserrat Variable', Montserrat, system-ui, sans-serif",
+  sans: "'Montserrat Variable', Montserrat, system-ui, sans-serif",
+  mono: "'Montserrat Variable', Montserrat, system-ui, sans-serif",
 } as const;

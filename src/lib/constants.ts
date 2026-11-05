@@ -63,26 +63,17 @@ export const DIRECTORIES = [
   'Chamber of Commerce',
 ] as const;
 
-export const TRACKED_ON = [
-  'Google Business Profile',
-  'Bing Places',
-  'Apple Business Connect',
-  'Yelp',
-  'Google AI Overviews',
-  'ChatGPT',
-  'Perplexity',
-  'Reddit',
-  'Quora',
-] as const;
-
-export type SectionSlug = 'overview' | 'signals' | 'community' | 'progress' | 'profile';
+export type SectionSlug = 'summary' | 'signals' | 'community';
+/** The report is 3 pages, each sized to fit one Word page (Letter, 6.5in content width). */
 export const SECTIONS: ReadonlyArray<{ slug: SectionSlug; nav: string; title: string; file: string }> = [
-  { slug: 'overview', nav: 'Overview', title: 'Overview', file: 'overview' },
-  { slug: 'signals', nav: 'AI Signals', title: 'AI Search Signals', file: 'ai-search-signals' },
-  { slug: 'community', nav: 'Community', title: 'Community Signals', file: 'community-signals' },
-  { slug: 'progress', nav: 'Progress', title: 'Monthly Progress', file: 'monthly-progress' },
-  { slug: 'profile', nav: 'Profile', title: 'Business Profile', file: 'business-profile' },
+  { slug: 'summary', nav: 'Summary', title: 'AI Visibility Summary', file: '1-ai-visibility-summary' },
+  { slug: 'signals', nav: 'AI Signals', title: 'AI Search Signals', file: '2-ai-search-signals' },
+  { slug: 'community', nav: 'Community & Progress', title: 'Community & Monthly Progress', file: '3-community-progress' },
 ];
 export function sectionBySlug(s: string | undefined) {
   return SECTIONS.find((x) => x.slug === s) ?? SECTIONS[0];
 }
+
+/** Page size in CSS px. 960 x 1240 = 6.5in x 8.4in at the same ratio, so a page fits a Word page with header/footer. */
+export const SHEET_W = 960;
+export const SHEET_H = 1240;

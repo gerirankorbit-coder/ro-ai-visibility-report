@@ -4,12 +4,13 @@ import { Button, Close, IconButton, NumberInput, SelectInput, Slider, TextArea, 
 import { createMonth, deleteMonth, updateMonth } from '@/lib/api';
 import { ENGINES, ENTITY, NAP_FIELDS, PHASES, STATUS_LABEL, WORK } from '@/lib/constants';
 import { emptyMonthInput, monthToInput } from '@/lib/defaults';
-import { monthKey, monthLabel, nextMonthKey } from '@/lib/format';
+import { monthKey, monthLabel } from '@/lib/format';
 import { aiReadiness, consistentListings, monthWarnings } from '@/lib/metrics';
 import { SOURCE_STATUSES, type Client, type Forum, type Month, type SourceStatus } from '@/types/schema';
 import { FormGroup } from './BusinessInfoForm';
 import { LivePreview } from './LivePreview';
 import { SaveStatus } from './SaveStatus';
+import { AddMonthDialog, type AddMonthChoice } from './AddMonthDialog';
 import { useAutosave } from './useAutosave';
 
 export function MonthEditor({ client, months }: { client: Client; months: Month[] }) {
@@ -40,19 +41,18 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
     { resetKey: draft?.id ?? 'none' },
   );
 
+  const [adding, setAdding] = useState(false);
   const add = useMutation({
-    mutationFn: async () => {
-      const latest = months[months.length - 1];
-      if (!latest) {
-        const now = new Date();
-        return createMonth(client.id, emptyMonthInput(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`));
-      }
-      return createMonth(client.id, { ...monthToInput(latest), period: `${nextMonthKey(monthKey(latest.period))}-01`, published: false, note: '' });
+    mutationFn: async ({ key: k, copyFrom }: AddMonthChoice) => {
+      await save.saveNow();
+      const period = `${k}-01`;
+      return createMonth(client.id, copyFrom ? { ...monthToInput(copyFrom), period, published: false, note: '' } : emptyMonthInput(period));
     },
     onSuccess: async (m) => {
       await qc.invalidateQueries({ queryKey: key });
       setSelectedId(m.id);
-      toast(`Added ${monthLabel(monthKey(m.period))}`);
+      setAdding(false);
+      toast(`Added ${monthLabel(monthKey(m.period))}. Update the numbers that changed.`);
     },
     onError: (e) => toast(e instanceof Error ? e.message : 'Could not add month'),
   });
@@ -73,10 +73,9 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
   if (!draft) {
     return (
       <div className="border-t border-line py-16">
-        <p className="mb-6 text-ink-2">No months yet for this client.</p>
-        <Button onClick={() => add.mutate()} disabled={add.isPending}>
-          Add first month
-        </Button>
+        <p className="mb-6 text-ink-2">No months yet for this client. Add the month you are reporting on.</p>
+        <Button onClick={() => setAdding(true)}>Add first month</Button>
+        <AddMonthDialog open={adding} onClose={() => setAdding(false)} months={months} busy={add.isPending} onAdd={(c) => add.mutate(c)} />
       </div>
     );
   }
@@ -84,7 +83,6 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
   const up = (fn: (m: Month) => Month) => setDraft((d) => (d ? fn(d) : d));
   const setForum = <K extends keyof Forum>(k: K, v: Forum[K]) => up((m) => ({ ...m, forum: { ...m.forum, [k]: v } }));
   const warnings = monthWarnings(draft);
-  const nextLabel = months.length ? monthLabel(nextMonthKey(monthKey(months[months.length - 1]!.period))) : 'month';
   const f = draft.forum;
 
   return (
@@ -92,7 +90,7 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
       <div className="min-w-0">
         {/* Month controls */}
         <div className="flex flex-wrap items-end gap-4 border-t border-line pt-6">
-          <SelectInput label="Month" className="w-[200px]" value={draft.id} onChange={(e) => setSelectedId(e.target.value)}>
+          <SelectInput label="Month" className="w-[200px]" value={draft.id} onChange={(e) => { const id = e.target.value; void save.saveNow().then(() => setSelectedId(id)); }}>
             {months
               .slice()
               .reverse()
@@ -103,9 +101,10 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
                 </option>
               ))}
           </SelectInput>
-          <Button size="sm" variant="outline" arrow="none" onClick={() => add.mutate()} disabled={add.isPending}>
-            {add.isPending ? 'Adding…' : `Add ${nextLabel} (copies latest)`}
+          <Button size="sm" variant="outline" arrow="none" onClick={() => setAdding(true)}>
+            + Add month
           </Button>
+          <AddMonthDialog open={adding} onClose={() => setAdding(false)} months={months} busy={add.isPending} onAdd={(c) => add.mutate(c)} />
           <div className="flex h-9 items-center">
             <Toggle label={draft.published ? 'Published · visible to client' : 'Draft · hidden from client'} checked={draft.published} onChange={(v) => up((m) => ({ ...m, published: v }))} />
           </div>
@@ -143,7 +142,7 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
             </div>
           ))}
           <div className="ml-auto">
-            <SaveStatus state={save} />
+            <SaveStatus state={save} label="Save month" onSave={() => void save.saveNow().then((ok) => ok && toast(`${monthLabel(monthKey(draft.period))} saved`))} />
           </div>
         </div>
 

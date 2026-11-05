@@ -28,27 +28,28 @@ export function gatePage({ next = '/', error, configError }: { next?: string; er
 <style>
 *{box-sizing:border-box;border-radius:0}
 html{-webkit-font-smoothing:antialiased}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F4F4F2;color:#0A0A0A;font:14px/1.5 "Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;padding:20px}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#FFFFFF;color:#0A0A0A;font:14px/1.5 Montserrat,"Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif;padding:20px}
 main{width:100%;max-width:420px}
 .mark{display:flex;align-items:center;gap:10px;margin-bottom:40px;font-size:10.5px;color:#8C8C8C}
-h1{margin:0;font-size:64px;line-height:.92;letter-spacing:-.055em;font-weight:500}
+h1{margin:0;font-size:56px;line-height:1;letter-spacing:-.03em;font-weight:700}
+.bar{height:4px;width:120px;margin-top:18px;background:linear-gradient(90deg,#30FEFE,#B227FF)}
 form,.box{margin-top:40px;border-top:1px solid #E3E3E0;padding-top:32px;display:flex;flex-direction:column;gap:8px}
 label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#8C8C8C}
 input[type=password]{height:40px;border:1px solid #E3E3E0;background:#fff;padding:0 12px;font:inherit;font-size:14px;color:#0A0A0A}
-input[type=password]:focus{outline:1.5px solid #E1251B;outline-offset:0;border-color:#0A0A0A}
+input[type=password]:focus{outline:1.5px solid #B227FF;outline-offset:0;border-color:#0A0A0A}
 .row{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #E3E3E0;margin-top:20px;padding-top:20px}
 .small{font-size:10.5px;color:#8C8C8C}
 .err{margin:6px 0 0;font-size:12px;color:#C0262D}
 .msg{margin:0;font-size:15px}
 button{display:inline-flex;gap:2px;height:32px;padding:0;border:0;background:none;cursor:pointer;font:inherit;font-size:11px;font-weight:500}
-button .l{display:flex;align-items:center;padding:0 14px;background:#0A0A0A;color:#fff}
+button .l{display:flex;align-items:center;padding:0 16px;background:linear-gradient(90deg,#30FEFE,#B227FF);color:#000;font-weight:700}
 button .c{display:flex;align-items:center;justify-content:center;width:32px;border:1px solid #0A0A0A;background:#fff;color:#0A0A0A}
-button:hover .c{background:#E1251B;border-color:#E1251B;color:#fff}
-button:focus-visible{outline:1.5px solid #E1251B;outline-offset:2px}
+button:hover .c{background:#B227FF;border-color:#B227FF;color:#fff}
+button:focus-visible{outline:1.5px solid #B227FF;outline-offset:2px}
 </style></head>
 <body><main>
-<div class="mark"><svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true"><rect width="8" height="8" fill="#E1251B"/><rect x="10" width="8" height="8" fill="none" stroke="#E1251B" stroke-width="1.5"/><rect y="10" width="8" height="8" fill="none" stroke="#E1251B" stroke-width="1.5"/><path d="M10 10h8v8" fill="none" stroke="#E1251B" stroke-width="1.5"/></svg>Private workspace</div>
-<h1>Rank Orbit</h1>
+<div class="mark"><svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true"><rect width="8" height="8" fill="#30C8FE"/><rect x="10" width="8" height="8" fill="none" stroke="#B227FF" stroke-width="1.5"/><rect y="10" width="8" height="8" fill="none" stroke="#B227FF" stroke-width="1.5"/><path d="M10 10h8v8" fill="none" stroke="#B227FF" stroke-width="1.5"/></svg>Private workspace</div>
+<h1>Rank Orbit</h1><div class="bar" aria-hidden="true"></div>
 ${configError ? `<div class="box">${body}</div>` : body}
 </main></body></html>`;
 }

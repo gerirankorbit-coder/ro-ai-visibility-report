@@ -4,8 +4,6 @@ import { LoadingPage, MessagePage } from '@/features/report/StatusPages';
 import { TextLink } from '@/components/ui';
 
 const DemoReport = lazy(() => import('./DemoReport'));
-const Styleguide = lazy(() => import('./styleguide/Styleguide'));
-const StyleguideCharts = lazy(() => import('./styleguide/StyleguideCharts'));
 const AdminApp = lazy(() => import('@/features/admin/AdminApp'));
 
 const s = (el: ReactNode) => <Suspense fallback={<LoadingPage />}>{el}</Suspense>;
@@ -22,8 +20,6 @@ export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/admin" replace /> },
   { path: '/demo', element: <Navigate to="/demo/summit/overview" replace /> },
   { path: '/demo/:client/:section?', element: s(<DemoReport />) },
-  { path: '/styleguide', element: s(<Styleguide />) },
-  { path: '/styleguide/charts', element: s(<StyleguideCharts />) },
   { path: '/admin/*', element: s(<AdminApp />) },
   { path: '*', element: <NotFound /> },
 ], { future: { v7_relativeSplatPath: true, v7_fetcherPersist: true, v7_normalizeFormMethod: true, v7_partialHydration: true, v7_skipActionErrorRevalidation: true } });

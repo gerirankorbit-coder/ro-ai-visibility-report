@@ -1,8 +1,10 @@
 # Rank Orbit — AI Visibility Dashboard
 
 A client-facing AI Search / AI Overview visibility report for Rank Orbit LLC. Staff enter
-monthly numbers in the Admin and view the finished report in the staff preview. Clients receive the
-report as files: every section exports as a 4320px-wide PNG, and the full report exports as one PDF.
+monthly numbers in the Admin and view the finished report in the staff preview. The AI report is
+**3 pages**, each sized to fit one Word page, in the same colors and font as the Rank Orbit Word report
+(white, black, Montserrat, cyan→purple gradient). Copy a page and paste it into the monthly GMB + AI Word
+report, or download PNGs or a PDF.
 The whole site is private behind one password. See [Privacy and access](#privacy-and-access).
 
 **Stack:** React 18 · Vite · TypeScript (strict) · Tailwind CSS v3 · React Router v6 ·
@@ -14,11 +16,10 @@ hand-built SVG charts ·
 
 | Route | What it is |
 |---|---|
-| `/demo/:client/:section?` | The report with local demo data (`summit`, `harbor`). Sections: `overview`, `signals`, `community`, `progress`, `profile`. `?m=YYYY-MM` picks a month. No Supabase needed. |
+| `/demo/:client/:page?` | The report with local demo data (`summit`, `harbor`). Pages: `summary`, `signals`, `community`. `?m=YYYY-MM` picks a month. No Supabase needed. |
 | `/admin` | Client list. |
 | `/admin/clients/:id` | Client editor: Business info · Monthly data. |
-| `/admin/clients/:id/preview/:section?` | The client report for staff, including draft months. Screenshot and PDF export live here. |
-| `/styleguide`, `/styleguide/charts` | Design system primitives and chart gallery. |
+| `/admin/clients/:id/preview/:page?` | The 3-page report for a client, including draft months. Copy / PNG / PDF export live here. |
 
 ## Privacy and access
 
@@ -136,30 +137,39 @@ Vercel require your Vercel login before the password screen.
 - `splitWeekly(weekly, seed)` is a deterministic 4×7 split of the weekly totals. Weekends get less
   weight, and each week sums exactly to its total.
 
-### Screenshot export (`src/lib/export.ts`, `src/features/report/ReportDocument.tsx`)
+### The 3 report pages
 
-- The Screenshot button renders the current section **offscreen at a fixed 1440px width**, through a
-  portal inside the same report context. It then captures that node with
-  `html-to-image` `toBlob({ pixelRatio: 3, width: 1440 })`. The PNG is therefore always 4320px wide
-  and pixel-identical whatever the viewport size. This was verified at 1440 and 390.
-- The layout uses **container queries**, not viewport media queries, so the 1440px offscreen copy
-  always gets the desktop layout. The TopNav and Admin chrome are not part of the capture.
-- Before capture, `data-capturing="true"` on `<html>` turns off animations and hides tooltips.
-  The export waits for `document.fonts.ready` and two animation frames.
-- Fonts are self-hosted (latin and latin-ext subsets, in `src/styles/fonts.css`), so `html-to-image`
-  can inline them. Chart colors are resolved hex values from `src/lib/tokens.ts`.
-- File names follow `{client-slug}_{section-slug}_{YYYY-MM}.png`.
-- The PNG downloads straight away. A preview modal then offers **Copy image**, and falls back to a
-  message if the browser blocks clipboard images.
-- **Export full report (PDF)** is in the Admin client header and in the staff preview. It captures
-  all 5 sections at pixelRatio 2 and builds one PDF page per section. Each page is as tall as its section.
+| Page | Contents |
+|---|---|
+| 1. AI Visibility Summary | AI Readiness score, 4 key metrics, monthly statement, visibility trend, AI engine readiness, work delivered + highlight |
+| 2. AI Search Signals | NAP accuracy by field, listing consistency (status counts + directory table, up to 14), entity building |
+| 3. Community & Monthly Progress | Community phase + authority, profiles, platform coverage, month-to-month table (last 6 months), milestones |
+
+Each page is a fixed 960 × 1240 px sheet, the same shape as 6.5in × 8.4in. That's the content area
+of a Letter page with 1in side margins, leaving room for the Word report's own logo header and
+footer. Exports are captured at 3× (2880 × 3720 px), which stays sharp in Word.
+
+### Exports (`src/features/report/ExportBar.tsx`, `src/lib/export.ts`)
+
+- **Copy page** puts the current page on the clipboard as a PNG. In Word, click where it should
+  go and press Ctrl+V, then set the picture width to 6.5in if needed.
+- **Download PNG** saves the current page. **All 3 pages** saves all three PNGs.
+- **PDF** builds a Letter-size PDF, one page per report page, with 1in margins.
+- File names look like `ridge-runner-construction_1-ai-visibility-summary_2026-10.png`.
+- Pages are rendered offscreen at their fixed size, so the output is identical on any screen.
+  Fonts are self-hosted and inlined. Chart colors are resolved hex values from `src/lib/tokens.ts`.
 
 ### Sending a report to a client
 
-1. Publish the month in **Monthly data**.
-2. Open **Preview client view** and pick the month. Press **Screenshot** on each section you need,
-   or use **Export full report (PDF)**.
-3. Send the PNG or PDF to the client.
+1. **New client** (once per client): enter the name and category, then fill in **Business info**.
+   It is saved permanently and stays for every future month.
+2. **Every month:** open the client, go to **Monthly data** and press **+ Add month**. Pick the report
+   month. "Copy of <latest month>" is selected by default, so every number, listing and community
+   value is carried over and you only change what moved. Opening a client always shows its latest
+   month exactly as you left it. Older months stay in the **Month** list.
+3. Press **Save month**. Changes also autosave about half a second after you stop typing.
+4. Open **Preview client view**, then **Copy page** for each of the 3 pages and paste them into the
+   Word report (or download PNG / PDF).
 
 ### Changing the password
 
@@ -167,8 +177,9 @@ Update `SITE_PASSWORD` in Vercel and redeploy. Every existing session stops work
 
 ### Admin autosave
 
-The business info and monthly data forms autosave 600ms after the last change. The status reads
-"Saved · HH:MM". Values are clamped to 0–100 where that applies. If building trust plus active
+The business info and monthly data forms autosave 600ms after the last change, and the **Save client**
+and **Save month** buttons save immediately. The status reads "Saved to database · HH:MM"
+("Unsaved changes" while typing), and the browser warns before closing a tab with unsaved changes. Values are clamped to 0–100 where that applies. If building trust plus active
 profiles is more than created, the form shows an inline warning. On screens 1440px or wider, a live
 preview pane renders the client report with unsaved values.
 
@@ -185,7 +196,7 @@ src/
   app/                routes, demo report route, styleguide
   components/ui/      primitives (Button, Tabs, SectionLabel, IndexTable, Kpi, Field, Slider…)
   components/charts/  Gauge, Ring, LineChart, StackedBars, Radar, Heatmap, Funnel, Sparkline, HBar
-  features/report/    report context, frame, 5 sections, screenshot
+  features/report/    report context, 3 fixed-size pages, sheet frame, exports
   features/admin/     client list, editor, month editor, PDF export
   lib/                api (calls /api/rpc), metrics, export, format, tokens, demo data
   types/              Zod schemas

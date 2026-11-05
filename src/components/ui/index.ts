@@ -1,11 +1,8 @@
 export * from './Button';
 export * from './DeltaBadge';
-export * from './EmberCard';
 export * from './Field';
 export * from './icons';
 export * from './IndexTable';
-export * from './Kpi';
-export * from './LogoStrip';
 export * from './Modal';
 export * from './ProgressBar';
 export * from './SectionLabel';
@@ -14,4 +11,3 @@ export * from './StatusChip';
 export * from './Tabs';
 export * from './TextLink';
 export * from './Toast';
-export * from './VisualCard';

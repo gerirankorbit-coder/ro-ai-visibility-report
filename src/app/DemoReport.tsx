@@ -9,7 +9,7 @@ function DemoBanner({ client }: { client: DemoKey }) {
     <div className="no-capture border-b border-line-d bg-black text-white">
       <div className="mx-auto flex h-9 max-w-content items-center justify-between gap-4 px-5 md:px-12">
         <p className="t-meta text-muted-d">
-          Demo data · <Link to="/styleguide" className="underline underline-offset-4 hover:text-white">Styleguide</Link>
+          Demo data · <Link to="/admin" className="underline underline-offset-4 hover:text-white">Admin</Link>
         </p>
         <label className="t-meta flex items-center gap-2 text-muted-d">
           Client

@@ -3,7 +3,7 @@ import { cn } from '@/lib/cn';
 import { Close } from './icons';
 
 export const inputCls =
-  'h-9 w-full min-w-0 border border-line bg-white px-2.5 text-[13px] text-ink placeholder:text-muted/80 focus:border-ink focus:outline-none focus-visible:outline-[1.5px] focus-visible:outline-red focus-visible:outline-offset-0 disabled:bg-paper disabled:text-muted';
+  'h-9 w-full min-w-0 border border-line bg-white px-2.5 text-[13px] text-ink placeholder:text-muted/80 focus:border-ink focus:outline-none focus-visible:outline-[1.5px] focus-visible:outline-accent focus-visible:outline-offset-0 disabled:bg-paper disabled:text-muted';
 
 export function Field({ label, children, hint, error, className, htmlFor }: { label: ReactNode; children: ReactNode; hint?: ReactNode; error?: ReactNode; className?: string; htmlFor?: string }) {
   return (
@@ -139,7 +139,7 @@ export function Toggle({ label, checked, onChange, disabled }: { label: ReactNod
       className="inline-flex items-center gap-2.5 text-[12px] text-ink"
     >
       <span className={cn('relative inline-block h-[18px] w-[32px] border transition-colors', checked ? 'border-ink bg-ink' : 'border-line bg-white')}>
-        <span className={cn('absolute top-[2px] h-3 w-3 transition-all', checked ? 'left-[16px] bg-red' : 'left-[2px] bg-muted')} />
+        <span className={cn('absolute top-[2px] h-3 w-3 transition-all', checked ? 'left-[16px] bg-accent' : 'left-[2px] bg-muted')} />
       </span>
       {label}
     </button>

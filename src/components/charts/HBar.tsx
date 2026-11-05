@@ -20,7 +20,7 @@ export function HBarList({
   tone = 'light',
   deltaUnit = '',
   label,
-  barHeight = 6,
+  barHeight = 8,
   className,
 }: {
   items: HBarItem[];
@@ -34,20 +34,20 @@ export function HBarList({
 }) {
   const dark = tone === 'dark';
   return (
-    <ul aria-label={label} className={cn('flex flex-col gap-4', className)}>
+    <ul aria-label={label} className={cn('flex flex-col gap-3', className)}>
       {items.map((it) => {
         const pct = clamp(max > 0 ? (it.value / max) * 100 : 0);
         return (
           <li key={it.label} className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between gap-3">
-              <span className={cn('text-[12px]', it.emphasis ? 'font-medium' : '', dark ? 'text-white' : 'text-ink')}>{it.label}</span>
+              <span className={cn('text-[12px]', it.emphasis ? 'font-bold' : 'font-medium', dark ? 'text-white' : 'text-ink')}>{it.label}</span>
               <span className="flex items-baseline gap-2.5">
                 {it.delta !== undefined ? <DeltaBadge value={it.delta} unit={deltaUnit} tone={tone} compact /> : null}
-                <span className={cn('t-mono text-[12.5px]', dark ? 'text-white' : 'text-ink')}>{it.display ?? `${it.value}${suffix}`}</span>
+                <span className={cn('num text-[12.5px] font-bold', dark ? 'text-white' : 'text-ink')}>{it.display ?? `${it.value}${suffix}`}</span>
               </span>
             </div>
-            <div className={cn('relative w-full', dark ? 'bg-line-d' : 'bg-line')} style={{ height: barHeight }} aria-hidden>
-              <div className={cn('absolute inset-y-0 left-0', it.emphasis ? 'bg-red' : dark ? 'bg-white' : 'bg-ink')} style={{ width: `${pct}%` }} />
+            <div className={cn('relative w-full', dark ? 'bg-line-d' : 'bg-[#ECECEF]')} style={{ height: barHeight }} aria-hidden>
+              <div className={cn('absolute inset-y-0 left-0', it.emphasis ? 'bg-ink' : dark ? 'bg-white' : 'bg-grad')} style={{ width: `${pct}%` }} />
             </div>
           </li>
         );

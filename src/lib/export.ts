@@ -1,13 +1,15 @@
 /**
  * HD screenshot + PDF export.
  *
- * Captures are always rendered at a fixed 1440px layout width (see CaptureStage),
- * so every PNG is 1440 × pixelRatio wide (4320px at 3×) regardless of viewport.
+ * Each report page is rendered offscreen at its fixed size (960 x 1240 CSS px) and captured at
+ * pixelRatio 3, so every PNG is 2880 x 3720 regardless of the viewport: sharp when placed at
+ * 6.5in wide in Word (~440 dpi).
  */
 import { T } from './tokens';
 import { clientSlug } from './format';
+import { SHEET_H, SHEET_W } from './constants';
 
-export const CAPTURE_WIDTH = 1440;
+export const CAPTURE_WIDTH = SHEET_W;
 
 let fontCssCache: Promise<string> | null = null;
 
@@ -40,7 +42,7 @@ function maxCanvasArea(): number {
 
 export async function nodeToBlob(node: HTMLElement, pixelRatio = 3): Promise<Blob> {
   const { toBlob, getFontEmbedCSS } = await import('html-to-image');
-  const height = Math.ceil(node.scrollHeight);
+  const height = SHEET_H;
   let ratio = pixelRatio;
   while (ratio > 1 && (CAPTURE_WIDTH * ratio * height * ratio > maxCanvasArea() || height * ratio > 32_000)) ratio -= 0.5;
   if (!fontCssCache) fontCssCache = getFontEmbedCSS(node).catch(() => '');
@@ -48,7 +50,7 @@ export async function nodeToBlob(node: HTMLElement, pixelRatio = 3): Promise<Blo
   const blob = await toBlob(node, {
     pixelRatio: ratio,
     cacheBust: true,
-    backgroundColor: T.paper,
+    backgroundColor: T.white,
     width: CAPTURE_WIDTH,
     height,
     canvasWidth: CAPTURE_WIDTH,
@@ -100,30 +102,21 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-async function imageSize(url: string): Promise<{ w: number; h: number }> {
-  return new Promise((res, rej) => {
-    const img = new Image();
-    img.onload = () => res({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = rej;
-    img.src = url;
-  });
-}
-
-/** Combine section PNGs into a PDF: one page per section, page height fit to content. */
-export async function blobsToPdf(blobs: Blob[], pixelRatio: number): Promise<Blob> {
+/**
+ * Combine page PNGs into a Letter-size PDF laid out like the Word report: each page image is
+ * 6.5in wide with 1in side margins.
+ */
+export async function blobsToPdf(blobs: Blob[]): Promise<Blob> {
   const { jsPDF } = await import('jspdf');
-  let doc: InstanceType<typeof jsPDF> | null = null;
-  for (const b of blobs) {
-    const url = await blobToDataUrl(b);
-    const { w, h } = await imageSize(url);
-    // 1 CSS px = 0.75pt; images are pixelRatio× CSS size.
-    const pw = (w / pixelRatio) * 0.75;
-    const ph = (h / pixelRatio) * 0.75;
-    const orientation = pw > ph ? 'landscape' : 'portrait';
-    if (!doc) doc = new jsPDF({ unit: 'pt', format: [pw, ph], orientation, compress: true });
-    else doc.addPage([pw, ph], orientation);
-    doc.addImage(url, 'PNG', 0, 0, pw, ph, undefined, 'FAST');
+  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait', compress: true });
+  const w = 6.5 * 72;
+  const h = (w * SHEET_H) / SHEET_W;
+  const x = 72;
+  const y = (792 - h) / 2;
+  for (let i = 0; i < blobs.length; i++) {
+    if (i > 0) doc.addPage('letter', 'portrait');
+    doc.addImage(await blobToDataUrl(blobs[i]!), 'PNG', x, y, w, h, undefined, 'FAST');
   }
-  if (!doc) throw new Error('Nothing to export');
+  if (!blobs.length) throw new Error('Nothing to export');
   return doc.output('blob');
 }

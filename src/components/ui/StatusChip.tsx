@@ -5,7 +5,7 @@ import { STATUS_LABEL } from '@/lib/constants';
 import type { SourceStatus } from '@/types/schema';
 
 type ChipTone = 'good' | 'warn' | 'bad' | 'muted' | 'ink' | 'red';
-const COLORS: Record<ChipTone, string> = { good: T.good, warn: T.warn, bad: T.bad, muted: T.ghost, ink: T.ink, red: T.red };
+const COLORS: Record<ChipTone, string> = { good: T.good, warn: T.warn, bad: T.bad, muted: T.ghost, ink: T.ink, red: T.accent };
 
 export const STATUS_TONE: Record<SourceStatus, ChipTone> = {
   verified: 'good',

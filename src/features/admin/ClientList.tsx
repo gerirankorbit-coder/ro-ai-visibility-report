@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Button, IndexTable, StatusChip, TextLink, useToast } from '@/components/ui';
+import { useState } from 'react';
+import { Button, IndexTable, Modal, StatusChip, TextInput, TextLink, useToast } from '@/components/ui';
 import { createClientRow, listClients, type ClientListRow } from '@/lib/api';
 import { newClientInput } from '@/lib/defaults';
 import { monthKey, monthLabel } from '@/lib/format';
@@ -12,11 +13,18 @@ export default function ClientList() {
   const qc = useQueryClient();
   const nav = useNavigate();
   const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
   const create = useMutation({
-    mutationFn: () => createClientRow(newClientInput()),
+    mutationFn: () => createClientRow({ ...newClientInput(), name: name.trim(), category: category.trim() }),
     onSuccess: (c) => {
       void qc.invalidateQueries({ queryKey: ['clients'] });
-      nav(`/admin/clients/${c.id}`);
+      toast(`${c.name} saved. Add the business details, then the first month.`);
+      setOpen(false);
+      setName('');
+      setCategory('');
+      nav(`/admin/clients/${c.id}?tab=info`);
     },
     onError: (e) => toast(e instanceof Error ? e.message : 'Could not create client'),
   });
@@ -28,8 +36,8 @@ export default function ClientList() {
           <h1 className="font-display text-[56px] font-medium leading-[0.92] tracking-[-0.055em]">Clients</h1>
           <p className="t-meta mt-3 text-muted">{q.data ? `${q.data.length} client${q.data.length === 1 ? '' : 's'}` : 'Loading…'} · AI Search Visibility Program</p>
         </div>
-        <Button onClick={() => create.mutate()} disabled={create.isPending} arrow="right">
-          {create.isPending ? 'Creating…' : 'New client'}
+        <Button onClick={() => setOpen(true)} arrow="right">
+          New client
         </Button>
       </div>
       {q.isError ? (
@@ -78,6 +86,34 @@ export default function ClientList() {
           ]}
         />
       ) : null}
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="New client"
+        footer={
+          <>
+            <Button size="sm" variant="quiet" arrow="none" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" arrow="right" disabled={!name.trim() || create.isPending} onClick={() => create.mutate()}>
+              {create.isPending ? 'Saving…' : 'Save client'}
+            </Button>
+          </>
+        }
+      >
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (name.trim()) create.mutate();
+          }}
+        >
+          <TextInput label="Business name" required autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Ridge Runner Construction, LLC" />
+          <TextInput label="Category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Construction service" />
+          <p className="text-[12px] text-ink-2">The client is saved permanently. You can fill in address, hours and services next, then add monthly data.</p>
+          <button type="submit" hidden />
+        </form>
+      </Modal>
     </AdminLayout>
   );
 }

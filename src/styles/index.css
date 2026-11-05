@@ -5,24 +5,28 @@
 @tailwind utilities;
 
 :root {
-  --paper: #f4f4f2;
+  /* Rank Orbit brand (matches the Word report): white pages, black text, cyan -> purple gradient. */
+  --paper: #ffffff;
   --white: #ffffff;
+  --panel: #f7f7f8;
+  --canvas: #eeeef1;
   --ink: #0a0a0a;
-  --ink-2: #3b3b3b;
-  --muted: #8c8c8c;
-  --ghost: #bdbdbd;
-  --line: #e3e3e0;
+  --ink-2: #3f3f46;
+  --muted: #71717a;
+  --ghost: #a1a1aa;
+  --line: #e4e4e7;
+  --line-strong: #0a0a0a;
   --black: #000000;
-  --black-2: #0e0e0e;
-  --line-d: #222222;
-  --muted-d: #8a8a8a;
-  --red: #e1251b;
-  --ember-1: #2a0700;
-  --ember-2: #8a1e04;
-  --ember-3: #e2550f;
-  --good: #1f8a4c;
-  --warn: #b7791f;
-  --bad: #c0262d;
+  --black-2: #18181b;
+  --line-d: #27272a;
+  --muted-d: #a1a1aa;
+  --accent: #b227ff;
+  --cyan: #30fefe;
+  --cyan-ink: #0e9fc6;
+  --grad: linear-gradient(90deg, #30fefe 0%, #b227ff 100%);
+  --good: #15803d;
+  --warn: #ce6c01;
+  --bad: #c70509;
   color-scheme: light;
 }
 
@@ -42,7 +46,7 @@
     border-radius: 0;
   }
   :focus-visible {
-    outline: 1.5px solid var(--red);
+    outline: 1.5px solid var(--accent);
     outline-offset: 2px;
   }
   .on-dark :focus-visible {
@@ -69,7 +73,7 @@
     font-family: theme('fontFamily.display');
     font-size: clamp(56px, 9cqw, 148px);
     line-height: 0.92;
-    letter-spacing: -0.055em;
+    letter-spacing: -0.03em;
     font-weight: 500;
     text-wrap: balance;
   }
@@ -77,16 +81,16 @@
     font-family: theme('fontFamily.display');
     font-size: clamp(72px, 10cqw, 168px);
     line-height: 0.9;
-    letter-spacing: -0.06em;
-    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
   .t-h1 {
     font-family: theme('fontFamily.display');
     font-size: clamp(30px, 4cqw, 40px);
     line-height: 1.08;
-    letter-spacing: -0.035em;
-    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-weight: 700;
   }
   .t-statement {
     font-family: theme('fontFamily.display');
@@ -137,6 +141,15 @@
   }
   .capture-only {
     display: none;
+  }
+  .bg-grad {
+    background: var(--grad);
+  }
+  .text-grad {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
 
@@ -253,7 +266,7 @@ html[data-capturing='true'] .capture-only {
   outline-offset: 4px;
 }
 .ro-range:focus-visible::-webkit-slider-thumb {
-  background: var(--red);
+  background: var(--accent);
 }
 .ro-check {
   -webkit-appearance: none;
@@ -273,7 +286,7 @@ html[data-capturing='true'] .capture-only {
   content: '';
   width: 6px;
   height: 6px;
-  background: var(--red);
+  background: var(--accent);
 }
 input[type='number'] {
   -moz-appearance: textfield;

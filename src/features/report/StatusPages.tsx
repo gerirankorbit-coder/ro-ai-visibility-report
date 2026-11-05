@@ -36,7 +36,7 @@ export function LoadingPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper" role="status" aria-live="polite">
       <div className="flex items-center gap-3">
-        <span className="inline-block h-[6px] w-[6px] animate-pulse bg-red" />
+        <span className="inline-block h-[6px] w-[6px] animate-pulse bg-accent" />
         <span className="t-meta text-muted">Loading report…</span>
       </div>
     </div>

@@ -13,7 +13,7 @@ function Group({ title, children, aside }: { title: string; children: React.Reac
     <section className="grid grid-cols-1 gap-6 border-t border-line py-8 lg:grid-cols-12">
       <div className="lg:col-span-3">
         <h2 className="flex items-center gap-2 text-[11px] font-medium">
-          <span className="inline-block h-[6px] w-[6px] bg-red" aria-hidden />
+          <span className="inline-block h-[6px] w-[6px] bg-accent" aria-hidden />
           {title}
         </h2>
         {aside ? <div className="mt-2 text-[12px] text-muted">{aside}</div> : null}
@@ -69,8 +69,9 @@ export function BusinessInfoForm({ client }: { client: Client }) {
 
   return (
     <div>
-      <div className="flex justify-end py-4">
-        <SaveStatus state={state} />
+      <div className="sticky top-12 z-20 flex items-center justify-between gap-4 border-b border-line bg-white/95 py-3 backdrop-blur">
+        <p className="text-[12px] text-muted">Client details are saved to the database and stay here for every future month.</p>
+        <SaveStatus state={state} label="Save client" onSave={() => void state.saveNow().then((ok) => ok && toast('Client saved'))} />
       </div>
       <Group title="Business" aside="Shown in the report header and the business profile.">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">

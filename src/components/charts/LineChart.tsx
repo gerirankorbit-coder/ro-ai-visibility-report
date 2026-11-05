@@ -56,7 +56,7 @@ export function LineChart({
     >
       <defs>
         <linearGradient id={`area-${uid}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={th.main} stopOpacity={0.06} />
+          <stop offset="0" stopColor={th.main} stopOpacity={0.14} />
           <stop offset="1" stopColor={th.main} stopOpacity={0} />
         </linearGradient>
       </defs>
@@ -81,7 +81,7 @@ export function LineChart({
                 d={d}
                 fill="none"
                 stroke={c}
-                strokeWidth={1.75}
+                strokeWidth={2.25}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 strokeDasharray={s.dash}

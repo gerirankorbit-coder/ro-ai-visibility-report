@@ -30,7 +30,7 @@ export function ProgressBar({
       className={cn('relative w-full', tone === 'dark' ? 'bg-line-d' : 'bg-line', className)}
       style={{ height }}
     >
-      <div className={cn('absolute inset-y-0 left-0', accent ? 'bg-red' : tone === 'dark' ? 'bg-white' : 'bg-ink')} style={{ width: `${pct}%` }} />
+      <div className={cn('absolute inset-y-0 left-0', accent ? 'bg-accent' : tone === 'dark' ? 'bg-white' : 'bg-ink')} style={{ width: `${pct}%` }} />
     </div>
   );
 }

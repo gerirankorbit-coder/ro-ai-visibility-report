@@ -22,7 +22,7 @@ function classes(variant: Variant, tone: 'light' | 'dark', size: 'sm' | 'md') {
     return {
       root: shared,
       label: cn('flex items-center px-3', tone === 'dark' ? 'bg-white text-ink' : 'bg-ink text-white'),
-      cell: cn('flex aspect-square items-center justify-center', tone === 'dark' ? 'bg-white text-ink' : 'border border-ink bg-white text-ink', 'transition-colors group-hover:bg-red group-hover:text-white group-hover:border-red'),
+      cell: cn('flex aspect-square items-center justify-center', tone === 'dark' ? 'bg-white text-ink' : 'border border-ink bg-white text-ink', 'transition-colors group-hover:bg-accent group-hover:text-white group-hover:border-accent'),
     };
   }
   if (variant === 'danger') {

@@ -127,7 +127,7 @@ export function GridY({
         return (
           <g key={t}>
             <line x1={x0} x2={x1} y1={yy} y2={yy} stroke={theme.grid} strokeWidth={1} shapeRendering="crispEdges" />
-            <text x={labelX ?? x0 - 10} y={yy + 3.5} textAnchor="end" fontSize={10.5} fill={theme.axis} fontFamily={FONT.mono}>
+            <text x={labelX ?? x0 - 10} y={yy + 3.5} textAnchor="end" fontSize={11} fill={theme.axis} fontFamily={FONT.mono}>
               {fmt(v)}
             </text>
           </g>

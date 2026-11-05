@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 export function RedSquare({ size = 6, className }: { size?: number; className?: string }) {
-  return <span aria-hidden className={cn('inline-block shrink-0 bg-red', className)} style={{ width: size, height: size }} />;
+  return <span aria-hidden className={cn('inline-block shrink-0 bg-accent', className)} style={{ width: size, height: size }} />;
 }
 
 export function SectionLabel({

@@ -1,24 +1,19 @@
-import type { ReactNode } from 'react';
-import { Link, NavLink, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { NavLink, useParams } from 'react-router-dom';
 import { AgencyMark, Caret } from '@/components/ui';
-import { AGENCY, SECTIONS, sectionBySlug, type SectionSlug } from '@/lib/constants';
+import { AGENCY, SECTIONS, SHEET_H, SHEET_W, sectionBySlug, type SectionSlug } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { monthKey, monthLabel } from '@/lib/format';
 import { useReport } from './ReportContext';
 import { ReportDocument } from './ReportDocument';
-import { ScreenshotButton } from './ScreenshotButton';
-import { useEffect } from 'react';
+import { ExportBar } from './ExportBar';
 
 function MonthSwitcher() {
   const { months, currentKey, setMonth, mode } = useReport();
   return (
-    <label className="relative inline-flex items-center gap-1.5 text-[11px]">
-      <span className="sr-only">Report month</span>
-      <select
-        value={currentKey}
-        onChange={(e) => setMonth(e.target.value)}
-        className="t-mono h-8 cursor-pointer appearance-none bg-transparent pr-4 text-[11px] text-ink hover:underline focus-visible:outline-red"
-      >
+    <label className="relative inline-flex items-center gap-2 text-[12px]">
+      <span className="text-muted">Month</span>
+      <select value={currentKey} onChange={(e) => setMonth(e.target.value)} className="h-8 cursor-pointer appearance-none border border-line bg-white pl-2.5 pr-7 text-[12px] font-semibold text-ink focus-visible:outline-accent">
         {months
           .slice()
           .reverse()
@@ -32,65 +27,76 @@ function MonthSwitcher() {
             );
           })}
       </select>
-      <Caret className="pointer-events-none absolute right-0" />
+      <Caret className="pointer-events-none absolute right-2.5" />
     </label>
   );
 }
 
-function TopNav({ section }: { section: SectionSlug }) {
-  const { href } = useReport();
-  const links = (
-    <>
-      {SECTIONS.map((s) => (
-        <NavLink
-          key={s.slug}
-          to={href(s.slug)}
-          aria-current={s.slug === section ? 'page' : undefined}
-          className={cn('inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap text-[11px] leading-none', s.slug === section ? 'text-ink' : 'text-ink-2 hover:text-ink')}
-        >
-          {s.slug === section ? <span aria-hidden className="inline-block h-1 w-1 rounded-full bg-red" /> : null}
-          {s.nav}
-          <Caret size={7} className="opacity-50" />
-        </NavLink>
-      ))}
-    </>
-  );
+/** Shows the fixed-size page, scaled down to fit narrow screens (exports are never scaled). */
+function PageViewer({ section }: { section: SectionSlug }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setScale(Math.min(1, el.clientWidth / SHEET_W)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <header className="no-capture sticky top-0 z-40 border-b border-line bg-paper/[0.92] backdrop-blur-md">
-      <div className="mx-auto flex h-12 w-full max-w-content items-center justify-between gap-4 px-5 md:px-12">
-        <Link to={href('overview')} className="flex items-center gap-2.5 text-[12px] font-medium text-ink" aria-label={`${AGENCY} report home`}>
-          <AgencyMark size={16} />
-          <span className="font-display tracking-[-0.01em]">{AGENCY}</span>
-        </Link>
-        <nav aria-label="Report sections" className="hidden items-center gap-6 lg:flex">
-          {links}
-        </nav>
-        <div className="flex items-center gap-4">
-          <MonthSwitcher />
-          <ScreenshotButton section={section} />
+    <div ref={ref} className="mx-auto w-full max-w-[960px]">
+      <div style={{ height: SHEET_H * scale }}>
+        <div className="border border-line" style={{ width: SHEET_W, transform: scale < 1 ? `scale(${scale})` : undefined, transformOrigin: '0 0' }}>
+          <ReportDocument id="report-capture" section={section} />
         </div>
       </div>
-      <nav aria-label="Report sections" className="flex items-center gap-5 overflow-x-auto border-t border-line px-5 md:px-12 lg:hidden">
-        {links}
-      </nav>
-    </header>
+    </div>
   );
 }
 
-/** Report page: sticky TopNav + the capturable report document. */
+/** Report workspace: page tabs, month switcher and exports above the current page. */
 export function ReportShell({ banner }: { banner?: ReactNode }) {
   const { section: raw } = useParams();
   const section = sectionBySlug(raw).slug;
-  const { report, currentKey } = useReport();
+  const { report, currentKey, href } = useReport();
   useEffect(() => {
     document.title = `${sectionBySlug(section).title} · ${report.client.name} · ${monthLabel(currentKey)}`;
   }, [section, report.client.name, currentKey]);
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-canvas">
       {banner}
-      <TopNav section={section} />
-      <main>
-        <ReportDocument id="report-capture" section={section} />
+      <header className="no-capture sticky top-0 z-40 border-b border-line bg-white">
+        <div className="mx-auto flex min-h-12 max-w-[1200px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-2">
+          <div className="flex items-center gap-2.5 text-[13px] font-bold">
+            <AgencyMark size={16} color="#B227FF" />
+            {AGENCY}
+            <span className="font-normal text-muted">· {report.client.name}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <MonthSwitcher />
+            <ExportBar section={section} />
+          </div>
+        </div>
+        <nav aria-label="Report pages" className="mx-auto flex max-w-[1200px] gap-1 overflow-x-auto px-5">
+          {SECTIONS.map((s, i) => (
+            <NavLink
+              key={s.slug}
+              to={href(s.slug)}
+              aria-current={s.slug === section ? 'page' : undefined}
+              className={cn('relative inline-flex h-10 shrink-0 items-center gap-2 px-3 text-[12.5px] font-semibold', s.slug === section ? 'text-ink' : 'text-muted hover:text-ink')}
+            >
+              <span className={cn('inline-flex h-5 w-5 items-center justify-center text-[11px]', s.slug === section ? 'bg-grad text-black' : 'bg-panel')}>{i + 1}</span>
+              {s.title}
+              {s.slug === section ? <span className="bg-grad absolute inset-x-0 bottom-0 h-[3px]" aria-hidden /> : null}
+            </NavLink>
+          ))}
+        </nav>
+      </header>
+      <main className="px-4 py-8">
+        <PageViewer section={section} />
+        <p className="no-capture mx-auto mt-4 max-w-[960px] text-center text-[11.5px] text-muted">
+          Each page is sized to fit one Word page (6.5in wide). Use <b>Copy page</b> and paste into your report, or download PNG / PDF.
+        </p>
       </main>
     </div>
   );
