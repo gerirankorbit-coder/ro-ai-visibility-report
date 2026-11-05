@@ -275,6 +275,12 @@ html[data-capturing='true'] .capture-only {
   height: 6px;
   background: var(--red);
 }
-input[type='number']::-webkit-inner-spin-button {
-  opacity: 0.4;
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }

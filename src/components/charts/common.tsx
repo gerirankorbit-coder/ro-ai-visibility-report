@@ -149,7 +149,15 @@ export function Marker({ x, y, current, color, accent, bg, shape = 'square' }: {
 }
 
 /** Legend item key: a short line (with dash) + a marker. */
-export function LegendKey({ color, dash, shape = 'square', bar = false }: { color: string; dash?: string; shape?: 'square' | 'circle' | 'triangle'; bar?: boolean }) {
+export function LegendKey({ color, dash, shape = 'square', bar = false, hatch = false }: { color: string; dash?: string; shape?: 'square' | 'circle' | 'triangle'; bar?: boolean; hatch?: boolean }) {
+  if (bar && hatch) {
+    return (
+      <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+        <rect width="10" height="10" fill={color} />
+        <path d="M-1 3 3 -1M-1 7 7 -1M1 11 11 1M5 11 11 5" stroke="#000" strokeOpacity="0.6" strokeWidth="1.2" />
+      </svg>
+    );
+  }
   if (bar) {
     return (
       <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
@@ -165,12 +173,12 @@ export function LegendKey({ color, dash, shape = 'square', bar = false }: { colo
   );
 }
 
-export function Legend({ items, tone = 'light', className }: { items: Array<{ name: string; color: string; dash?: string; shape?: 'square' | 'circle' | 'triangle'; value?: ReactNode; bar?: boolean }>; tone?: Tone; className?: string }) {
+export function Legend({ items, tone = 'light', className }: { items: Array<{ name: string; color: string; dash?: string; shape?: 'square' | 'circle' | 'triangle'; value?: ReactNode; bar?: boolean; hatch?: boolean }>; tone?: Tone; className?: string }) {
   return (
     <ul className={cn('flex flex-wrap items-center gap-x-6 gap-y-2', className)}>
       {items.map((i) => (
         <li key={i.name} className={cn('t-meta flex items-center gap-2', tone === 'dark' ? 'text-muted-d' : 'text-ink-2')}>
-          <LegendKey color={i.color} dash={i.dash} shape={i.shape} bar={i.bar} />
+          <LegendKey color={i.color} dash={i.dash} shape={i.shape} bar={i.bar} hatch={i.hatch} />
           <span>{i.name}</span>
           {i.value !== undefined ? <span className={cn('t-mono text-[11px]', tone === 'dark' ? 'text-white' : 'text-ink')}>{i.value}</span> : null}
         </li>

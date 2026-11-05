@@ -67,7 +67,7 @@ export async function listClients(): Promise<ClientListRow[]> {
   if (links.error) throw links.error;
   return clients.data.map((row) => {
     const client = ClientSchema.parse(row);
-    const m = months.data.find((x) => x.client_id === client.id);
+    const m = months.data.filter((x) => x.client_id === client.id).sort((a, b) => b.period.localeCompare(a.period))[0];
     const l = links.data.find((x) => x.client_id === client.id);
     return { client, latest: m ? normalizeMonth(m) : null, link: l ? ShareLinkSchema.parse(l) : null };
   });

@@ -90,7 +90,7 @@ export function LineChart({
               />
             ) : null}
             {pts.map((p, i) => (
-              <Marker key={i} x={p[0]} y={p[1]} current={i === n - 1} color={c} accent={th.accent} bg={th.bg} shape={s.shape} />
+              <Marker key={i} x={p[0]} y={p[1]} current={i === n - 1} color={c} accent={c === th.compare || c === th.s3 || c === th.s4 ? c : th.accent} bg={th.bg} shape={s.shape} />
             ))}
           </g>
         );

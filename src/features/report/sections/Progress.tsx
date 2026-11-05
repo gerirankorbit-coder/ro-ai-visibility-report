@@ -60,7 +60,7 @@ export function ProgressSection() {
         <BlockHead tone="dark" label="Work delivered by month" title="Optimization tasks completed each month" description="Stacked by category. Totals shown above each bar." />
         <div className="grid grid-cols-1 gap-10 @lg:grid-cols-12">
           <div className="@lg:col-span-3">
-            <Legend tone="dark" className="!flex-col !items-start !gap-y-3" items={WORK.map(([, name], i) => ({ name, color: fills[i]!, bar: true }))} />
+            <Legend tone="dark" className="!flex-col !items-start !gap-y-3" items={WORK.map(([, name], i) => ({ name, color: fills[i]!, bar: true, hatch: i === 2 }))} />
           </div>
           <div className="@lg:col-span-9">
             <StackedBars

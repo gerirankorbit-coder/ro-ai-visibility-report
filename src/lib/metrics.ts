@@ -137,7 +137,7 @@ export function monthWarnings(m: Month): string[] {
   const w: string[] = [];
   const f = m.forum;
   if (f.rWarming + f.rActive > f.rCreated)
-    w.push(`Reddit: building trust (${f.rWarming}) + active (${f.rActive}) is more than created (${f.rCreated}).`);
+    w.push(`Reddit: in warm-up (${f.rWarming}) + active (${f.rActive}) is more than created (${f.rCreated}).`);
   if (f.qActive > f.qProfiles) w.push(`Quora: active (${f.qActive}) is more than profiles (${f.qProfiles}).`);
   if (f.fActive > f.fProfiles) w.push(`Niche forums: active (${f.fActive}) is more than profiles (${f.fProfiles}).`);
   return w;
