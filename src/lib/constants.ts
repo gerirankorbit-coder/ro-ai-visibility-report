@@ -88,6 +88,8 @@ export const SHEET_H = 1240;
 /** GBP Summary block size (CSS px), same as the BrightLocal summary it reproduces. */
 export const GBP_W = 683;
 export const GBP_H = 196;
+/** Height when the Views / Actions / Phone calls charts are shown under the tiles. */
+export const GBP_H_FULL = 817;
 
-/** Capture size of a tab. */
-export const sizeOf = (s: SectionSlug) => (s === 'gbp' ? { w: GBP_W, h: GBP_H } : { w: SHEET_W, h: SHEET_H });
+/** Capture size of a tab (the GBP block is taller when its insight charts are shown). */
+export const sizeOf = (s: SectionSlug, gbpFull = true) => (s === 'gbp' ? { w: GBP_W, h: gbpFull ? GBP_H_FULL : GBP_H } : { w: SHEET_W, h: SHEET_H });

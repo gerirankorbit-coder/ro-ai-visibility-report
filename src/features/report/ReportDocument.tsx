@@ -6,10 +6,12 @@ import { SummaryPage } from './pages/SummaryPage';
 import { SignalsPage } from './pages/SignalsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { GbpSummaryBlock } from './GbpSummary';
+import { useReport } from './ReportContext';
 
 /** One capturable tab: a fixed-size AI page, or the GBP Summary block. */
 export function ReportDocument({ section, id }: { section: SectionSlug; id?: string; animate?: boolean }) {
-  const { w, h } = sizeOf(section);
+  const { current } = useReport();
+  const { w, h } = sizeOf(section, current.gbp_summary.showInsights);
   return (
     <div id={id} className="bg-white" style={{ width: w, height: h }}>
       {section === 'gbp' ? <GbpSummaryBlock /> : section === 'signals' ? <SignalsPage /> : section === 'community' ? <CommunityPage /> : <SummaryPage />}
@@ -29,6 +31,8 @@ interface Job {
  * Must be used inside a ReportProvider; render `stage` somewhere.
  */
 export function useSectionCapture() {
+  const { current } = useReport();
+  const gbpFull = current.gbp_summary.showInsights;
   const [job, setJob] = useState<Job | null>(null);
   const refs = useRef<Partial<Record<SectionSlug, HTMLDivElement | null>>>({});
 
@@ -43,7 +47,7 @@ export function useSectionCapture() {
         for (const s of job.sections) {
           const node = refs.current[s];
           if (!node) throw new Error(`Page ${s} did not render`);
-          out.push(await nodeToBlob(node, job.ratio, sizeOf(s)));
+          out.push(await nodeToBlob(node, job.ratio, sizeOf(s, gbpFull)));
           if (cancelled) return;
         }
         job.resolve(out);
@@ -57,7 +61,7 @@ export function useSectionCapture() {
     return () => {
       cancelled = true;
     };
-  }, [job]);
+  }, [job, gbpFull]);
 
   const capture = useCallback((sections: SectionSlug[], ratio = 3) => {
     setCapturing(true);
@@ -73,7 +77,7 @@ export function useSectionCapture() {
               ref={(el) => {
                 refs.current[s] = el;
               }}
-              style={{ width: sizeOf(s).w, height: sizeOf(s).h }}
+              style={{ width: sizeOf(s, gbpFull).w, height: sizeOf(s, gbpFull).h }}
             >
               <ReportDocument section={s} />
             </div>

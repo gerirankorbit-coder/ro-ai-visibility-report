@@ -36,7 +36,8 @@ function MonthSwitcher() {
 function PageViewer({ section }: { section: SectionSlug }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const { w, h } = sizeOf(section);
+  const { current } = useReport();
+  const { w, h } = sizeOf(section, current.gbp_summary.showInsights);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;

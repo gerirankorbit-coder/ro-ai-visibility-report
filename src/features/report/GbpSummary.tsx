@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { toneForStatus, type GbpSummary, type GbpTileKey, type TileTone } from '@/types/schema';
 import { useReport } from './ReportContext';
 
-import { GBP_H, GBP_W } from '@/lib/constants';
+import { GBP_H, GBP_H_FULL, GBP_W } from '@/lib/constants';
+import { GbpInsights } from './GbpInsights';
 
 /** Colours sampled from the BrightLocal summary (red, green, grey) and the Word report (orange). */
 export const TONES: Record<TileTone, { bg: string; bar: string; ink: string; label: string }> = {
@@ -81,7 +82,7 @@ function Tile({ k, label, status, tone }: { k: GbpTileKey; label: string; status
 export function GbpSummaryView({ data, location, website }: { data: GbpSummary; location: string; website: string }) {
   const d = data;
   return (
-    <div className="gbp-summary bg-white" style={{ width: GBP_W, height: GBP_H, position: 'relative', color: '#111' }}>
+    <div className="gbp-summary bg-white" style={{ width: GBP_W, height: d.showInsights ? GBP_H_FULL : GBP_H, position: 'relative', color: '#111' }}>
       <div
         style={{
           position: 'absolute',
@@ -117,6 +118,7 @@ export function GbpSummaryView({ data, location, website }: { data: GbpSummary; 
           <Tile key={t.key} k={t.key} label={t.label} status={d[t.key].status} tone={toneForStatus(d[t.key].status, d[t.key].tone)} />
         ))}
       </div>
+      {d.showInsights ? <GbpInsights data={d} /> : null}
     </div>
   );
 }

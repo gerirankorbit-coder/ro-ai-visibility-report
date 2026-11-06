@@ -2,7 +2,8 @@
  * Demo dataset, ported 1:1 from the mockup generator (same seeded RNG and ramps),
  * converted to the production data model. Used by /demo and by the seed script.
  */
-import type { Client, HoursDay, Month, Report, SourceStatus } from '@/types/schema';
+import type { Client, GbpSummary, HoursDay, Month, Report, SourceStatus } from '@/types/schema';
+import { GbpSummarySchema } from '@/types/schema';
 import { DAY_NAMES } from '@/types/schema';
 import { DIRECTORIES } from './constants';
 import { nextMonthKey } from './format';
@@ -100,19 +101,41 @@ function buildMonths(clientId: string, seed: string, startKey: string, n: number
       nap, entity, schema_cov, knowledge, mentions,
       nap_fields, entity_parts, engines, work, sources, forum,
       note: notes[i] ?? '',
-      gbp_summary: {
-        location: clientId === DEMO_IDS.summit ? 'Denver, CO' : 'San Diego, CA',
-        website: clientId === DEMO_IDS.summit ? 'www.summitpeakplumbing.com' : 'www.harborlinedental.com',
-        links: { status: i === 0 ? 'Poor' : 'Good', tone: i === 0 ? 'red' : 'green' },
-        rank: { status: 'OK', tone: 'orange' },
-        gbp: { status: i === n - 1 ? 'Good' : 'OK', tone: i === n - 1 ? 'green' : 'orange' },
-        onsite: { status: i === 0 ? 'Poor' : 'OK', tone: i === 0 ? 'red' : 'orange' },
-      },
+      gbp_summary: demoGbpSummary(clientId, k, i, n),
       updated_at: null,
     });
     k = nextMonthKey(k);
   }
   return out;
+}
+
+/** Sample GBP Summary + insights (30 days ending on the 5th of the next month, like BrightLocal). */
+function demoGbpSummary(clientId: string, key: string, i: number, n: number): GbpSummary {
+  const r = rng(`${clientId}:${key}:gbp`);
+  const summit = clientId === DEMO_IDS.summit;
+  const [y, m] = key.split('-').map(Number) as [number, number];
+  const start = new Date(y, m - 1, 6);
+  const day = (d: number) => {
+    const x = new Date(start);
+    x.setDate(start.getDate() + d);
+    return x.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+  };
+  const s = 0.6 + (n < 2 ? 1 : i / (n - 1)) * 0.6;
+  const v = (base: number) => Math.max(0, Math.round((base * (0.4 + r() * 1.2)) * s));
+  const last = i === n - 1;
+  return GbpSummarySchema.parse({
+    location: summit ? 'Denver, CO' : 'San Diego, CA',
+    website: summit ? 'www.summitpeakplumbing.com' : 'www.harborlinedental.com',
+    links: { status: i === 0 ? 'Poor' : 'Good', tone: i === 0 ? 'red' : 'green' },
+    rank: { status: 'OK', tone: 'orange' },
+    gbp: { status: last ? 'Good' : 'OK', tone: last ? 'green' : 'orange' },
+    onsite: { status: i === 0 ? 'Poor' : 'OK', tone: i === 0 ? 'red' : 'orange' },
+    updated: `${new Date(y, m, 5).toLocaleString('en-US', { day: 'numeric' })}th ${new Date(y, m, 5).toLocaleString('en-US', { month: 'short', year: 'numeric' })} at 22:21:47`,
+    range: 'Last 30 Days',
+    views: Array.from({ length: 31 }, (_, d) => ({ date: day(d), sd: v(2), sm: v(24), md: v(1.5), mm: v(19) })),
+    actions: Array.from({ length: 31 }, (_, d) => ({ date: day(d), web: v(0.4), dir: v(2), call: v(0.15) })),
+    calls: [2, 1, 0, 0, 1, 0, 0].map((c) => Math.round(c * s)),
+  });
 }
 
 function hours(o: string, c: string, sat: readonly [string, string] | null, sun: readonly [string, string] | null): HoursDay[] {
