@@ -149,10 +149,17 @@ Rank Tracker, GBP Audit, On-Site SEO).
 - **Location and Website:** they use the client's details unless you type something else.
 - **Next month:** it is copied with the rest of the month.
 - **Charts under the tiles:** the Views, Actions and Phone calls charts sit under the tiles, drawn
-  like BrightLocal with the same colours, legend totals and integer axes. Paste the daily rows
-  (date + numbers, copied from BrightLocal or a spreadsheet; header rows are skipped), type the
-  weekday phone calls, the "Last Updated" text and the range label. You can switch the charts off
-  to show the tiles only.
+  like BrightLocal with the same colours, legend totals and integer axes. There are two ways to fill
+  them in:
+  - **Monthly totals (default, recommended).** Type this month's totals: 4 Views numbers, 3 Actions
+    numbers and the 7 weekday phone calls. The Views and Actions charts plot each month's totals
+    across the last 12 months, and the legend shows this month's numbers. With a single month the
+    charts show bars. No daily numbers are invented.
+  - **Daily rows.** Paste one row per day (date + numbers, copied from BrightLocal or a
+    spreadsheet; header rows are skipped) to get a day-by-day curve. In the monthly trend, these
+    months count as the sum of their rows.
+  You can also set the "Last Updated" text and the range label, which is automatic in monthly mode,
+  e.g. "Last 6 Months". The charts can be switched off to show the tiles only.
 - **Export:** 683 × 817 px with charts, or 683 × 196 px for tiles only, both at 3× (2049 × 2451
   or 2049 × 588 px). Use **Copy image** to paste it into Word, or **Download PNG**.
 

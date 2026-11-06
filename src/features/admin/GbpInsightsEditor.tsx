@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, NumberInput, TextArea, TextInput, Toggle } from '@/components/ui';
 import { parseRows } from '@/lib/paste';
 import { DAY_NAMES, type GbpSummary } from '@/types/schema';
+import { cn } from '@/lib/cn';
 
 type Rows = Array<{ date: string; values: number[] }>;
 
@@ -50,10 +51,55 @@ export function GbpInsightsEditor({ data, onChange }: { data: GbpSummary; onChan
       </div>
       {data.showInsights ? (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <TextInput label="Last Updated (text)" placeholder="5th Nov 2026 at 22:21:47" value={data.updated} onChange={(e) => onChange((d) => ({ ...d, updated: e.target.value }))} />
-            <TextInput label="Date range label" placeholder="Last 30 Days" value={data.range} onChange={(e) => onChange((d) => ({ ...d, range: e.target.value }))} />
+          <div role="radiogroup" aria-label="How to enter insights" className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            {(
+              [
+                ['monthly', 'Monthly totals (recommended)', 'Type this month’s totals. The charts show the trend month by month.'],
+                ['daily', 'Daily rows', 'Paste one row per day from BrightLocal for a day-by-day curve.'],
+              ] as const
+            ).map(([v, t, d]) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={data.mode === v}
+                onClick={() => onChange((x) => ({ ...x, mode: v }))}
+                className={cn('flex flex-col items-start border px-3 py-2.5 text-left', data.mode === v ? 'border-ink bg-ink text-white' : 'border-line bg-white hover:border-ink')}
+              >
+                <span className="text-[12.5px] font-bold">{t}</span>
+                <span className={cn('text-[11px]', data.mode === v ? 'text-white/75' : 'text-muted')}>{d}</span>
+              </button>
+            ))}
           </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TextInput label="Last Updated (text, optional)" placeholder="5th Nov 2026 at 22:21:47" value={data.updated} onChange={(e) => onChange((d) => ({ ...d, updated: e.target.value }))} />
+            <TextInput label="Date range label (optional)" placeholder={data.mode === 'monthly' ? 'Automatic, e.g. Last 6 Months' : 'Last 30 Days'} value={data.range} onChange={(e) => onChange((d) => ({ ...d, range: e.target.value }))} />
+          </div>
+          {data.mode === 'monthly' ? (
+            <>
+              <div className="border border-line bg-white p-3">
+                <div className="mb-2 text-[12.5px] font-bold">Views this month</div>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                  <NumberInput label="Search - Desktop" value={data.vt.sd} onChange={(v) => onChange((d) => ({ ...d, vt: { ...d.vt, sd: v } }))} />
+                  <NumberInput label="Search - Mobile" value={data.vt.sm} onChange={(v) => onChange((d) => ({ ...d, vt: { ...d.vt, sm: v } }))} />
+                  <NumberInput label="Maps - Desktop" value={data.vt.md} onChange={(v) => onChange((d) => ({ ...d, vt: { ...d.vt, md: v } }))} />
+                  <NumberInput label="Maps - Mobile" value={data.vt.mm} onChange={(v) => onChange((d) => ({ ...d, vt: { ...d.vt, mm: v } }))} />
+                </div>
+              </div>
+              <div className="border border-line bg-white p-3">
+                <div className="mb-2 text-[12.5px] font-bold">Actions this month</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <NumberInput label="Website clicks" value={data.at.web} onChange={(v) => onChange((d) => ({ ...d, at: { ...d.at, web: v } }))} />
+                  <NumberInput label="Request direction" value={data.at.dir} onChange={(v) => onChange((d) => ({ ...d, at: { ...d.at, dir: v } }))} />
+                  <NumberInput label="Call you" value={data.at.call} onChange={(v) => onChange((d) => ({ ...d, at: { ...d.at, call: v } }))} />
+                </div>
+              </div>
+              <p className="text-[11.5px] leading-relaxed text-muted">
+                The Views and Actions charts plot each month&apos;s totals side by side (this month and the months before it), and the legend shows this month&apos;s numbers. With only one month entered, the charts show bars.
+              </p>
+            </>
+          ) : (
+          <>
           <PasteBox
             label="Views"
             cols={4}
@@ -68,6 +114,8 @@ export function GbpInsightsEditor({ data, onChange }: { data: GbpSummary; onChan
             current={data.actions}
             onApply={(r) => onChange((d) => ({ ...d, actions: r.slice(0, 62).map(({ date, values: [web, dir, call] }) => ({ date, web: web!, dir: dir!, call: call! })) }))}
           />
+          </>
+          )}
           <div className="border border-line bg-white p-3">
             <div className="mb-2 text-[12.5px] font-bold">Phone calls by weekday</div>
             <div className="grid grid-cols-7 gap-2">

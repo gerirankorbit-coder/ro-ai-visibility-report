@@ -95,8 +95,9 @@ export function toneForStatus(status: string, fallback: TileTone = 'orange'): Ti
 
 const TileSchema = () => z.object({ status: z.string().max(24).default('OK'), tone: TileToneSchema.default('orange') }).default({});
 
-/** GBP Summary block: location, website and four status tiles, filled in manually each month. */
-export const GbpSummarySchema = z.object({
+const int0 = z.number().int().min(0).default(0);
+
+const GbpSummaryObject = z.object({
   location: z.string().max(120).default(''),
   website: z.string().max(300).default(''),
   links: TileSchema(),
@@ -105,12 +106,32 @@ export const GbpSummarySchema = z.object({
   onsite: TileSchema(),
   /** Insights charts under the tiles (Views, Actions, Phone calls), entered manually. */
   showInsights: z.boolean().default(true),
+  /**
+   * 'monthly': enter this month's totals; the charts show the trend across months.
+   * 'daily': paste one row per day (BrightLocal-style daily curve).
+   */
+  mode: z.enum(['monthly', 'daily']).default('monthly'),
   updated: z.string().max(60).default(''),
-  range: z.string().max(40).default('Last 30 Days'),
+  range: z.string().max(40).default(''),
+  /** Monthly totals (mode = 'monthly'). */
+  vt: z.object({ sd: int0, sm: int0, md: int0, mm: int0 }).default({}),
+  at: z.object({ web: int0, dir: int0, call: int0 }).default({}),
+  /** Daily rows (mode = 'daily'). */
   views: z.array(z.object({ date: z.string().max(40), sd: z.number().int().min(0), sm: z.number().int().min(0), md: z.number().int().min(0), mm: z.number().int().min(0) })).max(62).default([]),
   actions: z.array(z.object({ date: z.string().max(40), web: z.number().int().min(0), dir: z.number().int().min(0), call: z.number().int().min(0) })).max(62).default([]),
   calls: z.array(z.number().int().min(0)).length(7).default([0, 0, 0, 0, 0, 0, 0]),
 });
+
+/** GBP Summary block: location, website, four status tiles and the insight charts. */
+export const GbpSummarySchema = z.preprocess((v) => {
+  // Months saved before monthly totals existed keep showing their pasted daily rows.
+  if (v && typeof v === 'object' && !('mode' in v)) {
+    const o = v as { views?: unknown[]; actions?: unknown[] };
+    const daily = (Array.isArray(o.views) && o.views.length > 0) || (Array.isArray(o.actions) && o.actions.length > 0);
+    return { ...v, mode: daily ? 'daily' : 'monthly' };
+  }
+  return v;
+}, GbpSummaryObject);
 export type GbpSummary = z.infer<typeof GbpSummarySchema>;
 export type GbpTileKey = 'links' | 'rank' | 'gbp' | 'onsite';
 
