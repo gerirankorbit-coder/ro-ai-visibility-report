@@ -143,8 +143,9 @@ Vercel require your Vercel login before the password screen.
 A separate **GBP Summary** tab (first tab in the report view) reproduces the BrightLocal "Summary"
 block: the gradient "Summary" chip, Location, Website URL and four status tiles (Links & Authority,
 Rank Tracker, GBP Audit, On-Site SEO).
-- **Where to fill it in:** **Monthly data → GBP Summary**. For each tile, pick a colour (Red,
-  Orange, Green or Grey, with exact BrightLocal colours) and type the status text (OK, Good…).
+- **Where to fill it in:** **Monthly data → GBP Summary**. For each tile, pick **OK**, **Good** or
+  **Poor**. The colour follows the status: OK is orange, Good is green and Poor is red (exact
+  BrightLocal colours).
 - **Location and Website:** they use the client's details unless you type something else.
 - **Next month:** it is copied with the rest of the month.
 - **Export:** it is captured at 683 × 196 px × 3 = 2049 × 588 px. Use **Copy image** to paste

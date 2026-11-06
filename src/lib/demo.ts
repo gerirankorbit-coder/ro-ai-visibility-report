@@ -103,10 +103,10 @@ function buildMonths(clientId: string, seed: string, startKey: string, n: number
       gbp_summary: {
         location: clientId === DEMO_IDS.summit ? 'Denver, CO' : 'San Diego, CA',
         website: clientId === DEMO_IDS.summit ? 'www.summitpeakplumbing.com' : 'www.harborlinedental.com',
-        links: { status: 'OK', tone: 'red' },
-        rank: { status: 'OK', tone: 'red' },
+        links: { status: i === 0 ? 'Poor' : 'Good', tone: i === 0 ? 'red' : 'green' },
+        rank: { status: 'OK', tone: 'orange' },
         gbp: { status: i === n - 1 ? 'Good' : 'OK', tone: i === n - 1 ? 'green' : 'orange' },
-        onsite: { status: 'OK', tone: i === n - 1 ? 'grey' : 'orange' },
+        onsite: { status: i === 0 ? 'Poor' : 'OK', tone: i === 0 ? 'red' : 'orange' },
       },
       updated_at: null,
     });

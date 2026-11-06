@@ -11,7 +11,7 @@ import { FormGroup } from './BusinessInfoForm';
 import { LivePreview } from './LivePreview';
 import { SaveStatus } from './SaveStatus';
 import { GbpSummaryView, TILES, TONES } from '@/features/report/GbpSummary';
-import { TILE_TONES } from '@/types/schema';
+import { TILE_STATUSES, toneForStatus } from '@/types/schema';
 import { AddMonthDialog, type AddMonthChoice } from './AddMonthDialog';
 import { useAutosave } from './useAutosave';
 
@@ -148,7 +148,7 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
           </div>
         </div>
 
-        <FormGroup title="GBP Summary" aside="The Summary block with four status tiles. Choose the text and colour of each tile; Location and Website use the client's details unless you type something else.">
+        <FormGroup title="GBP Summary" aside="The Summary block with four status tiles. Pick OK, Good or Poor for each tile; the colour follows (OK = orange, Good = green, Poor = red). Location and Website use the client's details unless you type something else.">
           <div className="flex flex-col gap-5">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <TextInput label="Location" placeholder={client.locality || 'Houston, TX'} value={draft.gbp_summary.location} onChange={(e) => up((m) => ({ ...m, gbp_summary: { ...m.gbp_summary, location: e.target.value } }))} />
@@ -159,39 +159,33 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
                 const tile = draft.gbp_summary[t.key];
                 const patch = (p: Partial<typeof tile>) => up((m) => ({ ...m, gbp_summary: { ...m.gbp_summary, [t.key]: { ...m.gbp_summary[t.key], ...p } } }));
                 return (
-                  <div key={t.key} className="grid grid-cols-[1fr_96px] gap-3 border border-line bg-white p-3">
-                    <div className="col-span-2 flex items-center gap-2 text-[12.5px] font-bold">
-                      <span className="inline-block h-3 w-3" style={{ background: TONES[tile.tone].bar }} aria-hidden />
+                  <div key={t.key} className="flex flex-col gap-2.5 border border-line bg-white p-3">
+                    <div className="flex items-center gap-2 text-[12.5px] font-bold">
+                      <span className="inline-block h-3 w-3" style={{ background: TONES[toneForStatus(tile.status, tile.tone)].bar }} aria-hidden />
                       {t.label}
                     </div>
-                    <div>
-                      <span className="t-meta mb-1.5 block uppercase tracking-[0.06em] text-muted">Colour</span>
-                      <div role="radiogroup" aria-label={`${t.label} colour`} className="flex gap-1.5">
-                        {TILE_TONES.map((tone) => (
+                    <div role="radiogroup" aria-label={`${t.label} status`} className="grid grid-cols-3 gap-1.5">
+                      {TILE_STATUSES.map((o) => {
+                        const on = tile.status.trim().toLowerCase() === o.status.toLowerCase();
+                        return (
                           <button
-                            key={tone}
+                            key={o.status}
                             type="button"
                             role="radio"
-                            aria-checked={tile.tone === tone}
-                            title={TONES[tone].label}
-                            onClick={() => patch({ tone })}
-                            className={`flex h-9 flex-1 items-center justify-center border text-[11px] font-semibold ${tile.tone === tone ? 'border-ink ring-1 ring-ink' : 'border-line'}`}
-                            style={{ background: TONES[tone].bg, color: TONES[tone].bar }}
+                            aria-checked={on}
+                            onClick={() => patch({ status: o.status, tone: o.tone })}
+                            className={`flex h-9 items-center justify-center gap-1.5 border text-[12px] font-semibold ${on ? 'border-ink ring-1 ring-ink' : 'border-line'}`}
+                            style={{ background: TONES[o.tone].bg, color: TONES[o.tone].bar }}
                           >
-                            {TONES[tone].label}
+                            {o.status}
+                            <span className="font-normal opacity-80">· {TONES[o.tone].label}</span>
                           </button>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
-                    <TextInput label="Status text" maxLength={24} value={tile.status} onChange={(e) => patch({ status: e.target.value })} list="gbp-status-options" />
                   </div>
                 );
               })}
-              <datalist id="gbp-status-options">
-                {['OK', 'Good', 'Excellent', 'Needs Work', 'Poor', 'In Progress'].map((o) => (
-                  <option key={o} value={o} />
-                ))}
-              </datalist>
             </div>
             <div className="overflow-x-auto border border-line bg-white">
               <GbpSummaryView data={draft.gbp_summary} location={draft.gbp_summary.location || client.locality} website={draft.gbp_summary.website || client.website} />

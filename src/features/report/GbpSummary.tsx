@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { GbpSummary, GbpTileKey, TileTone } from '@/types/schema';
+import { toneForStatus, type GbpSummary, type GbpTileKey, type TileTone } from '@/types/schema';
 import { useReport } from './ReportContext';
 
 import { GBP_H, GBP_W } from '@/lib/constants';
@@ -114,7 +114,7 @@ export function GbpSummaryView({ data, location, website }: { data: GbpSummary; 
       </div>
       <div style={{ position: 'absolute', left: 14, top: 99, display: 'flex', gap: 11 }}>
         {TILES.map((t) => (
-          <Tile key={t.key} k={t.key} label={t.label} status={d[t.key].status} tone={d[t.key].tone} />
+          <Tile key={t.key} k={t.key} label={t.label} status={d[t.key].status} tone={toneForStatus(d[t.key].status, d[t.key].tone)} />
         ))}
       </div>
     </div>

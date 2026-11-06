@@ -153,3 +153,15 @@ describe('demo dataset', () => {
     expect(last.forum.rKarma).toBe(1850);
   });
 });
+
+describe('GBP Summary tile colours', () => {
+  it('follows the status: OK = orange, Good = green, Poor = red', async () => {
+    const { toneForStatus, GbpSummarySchema } = await import('@/types/schema');
+    expect(toneForStatus('OK')).toBe('orange');
+    expect(toneForStatus('Good')).toBe('green');
+    expect(toneForStatus(' poor ')).toBe('red');
+    expect(toneForStatus('Something else', 'grey')).toBe('grey');
+    const d = GbpSummarySchema.parse({});
+    expect([d.links, d.rank, d.gbp, d.onsite].every((t) => t.status === 'OK' && t.tone === 'orange')).toBe(true);
+  });
+});
