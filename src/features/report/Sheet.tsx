@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
-import { AGENCY, SECTIONS, SHEET_H, SHEET_W, sectionBySlug, type SectionSlug } from '@/lib/constants';
+import { AGENCY, SECTIONS, SHEET_H, SHEET_W, sectionBySlug, type PageSlug } from '@/lib/constants';
 import { monthLabel } from '@/lib/format';
 import { DeltaBadge } from '@/components/ui';
 import { useReport } from './ReportContext';
@@ -87,7 +87,7 @@ export function ReportTable({ head, rows, highlight, className, align }: { head:
  * Word page edge to edge. The page header carries the page title, client and month; the Word
  * document supplies the Rank Orbit logo header and page footer.
  */
-export function Sheet({ section, children }: { section: SectionSlug; children: ReactNode }) {
+export function Sheet({ section, children }: { section: PageSlug; children: ReactNode }) {
   const { report, currentKey } = useReport();
   const meta = sectionBySlug(section);
   const n = SECTIONS.findIndex((s) => s.slug === section) + 1;

@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { SHEET_H, SHEET_W, type SectionSlug } from '@/lib/constants';
+import { sizeOf, type SectionSlug } from '@/lib/constants';
 import { nodeToBlob, setCapturing, waitForStableLayout } from '@/lib/export';
 import { SummaryPage } from './pages/SummaryPage';
 import { SignalsPage } from './pages/SignalsPage';
 import { CommunityPage } from './pages/CommunityPage';
+import { GbpSummaryBlock } from './GbpSummary';
 
-/** One report page (a fixed-size sheet). */
+/** One capturable tab: a fixed-size AI page, or the GBP Summary block. */
 export function ReportDocument({ section, id }: { section: SectionSlug; id?: string; animate?: boolean }) {
+  const { w, h } = sizeOf(section);
   return (
-    <div id={id} className="bg-white" style={{ width: SHEET_W, height: SHEET_H }}>
-      {section === 'signals' ? <SignalsPage /> : section === 'community' ? <CommunityPage /> : <SummaryPage />}
+    <div id={id} className="bg-white" style={{ width: w, height: h }}>
+      {section === 'gbp' ? <GbpSummaryBlock /> : section === 'signals' ? <SignalsPage /> : section === 'community' ? <CommunityPage /> : <SummaryPage />}
     </div>
   );
 }
@@ -41,7 +43,7 @@ export function useSectionCapture() {
         for (const s of job.sections) {
           const node = refs.current[s];
           if (!node) throw new Error(`Page ${s} did not render`);
-          out.push(await nodeToBlob(node, job.ratio));
+          out.push(await nodeToBlob(node, job.ratio, sizeOf(s)));
           if (cancelled) return;
         }
         job.resolve(out);
@@ -64,14 +66,14 @@ export function useSectionCapture() {
 
   const stage = job
     ? createPortal(
-        <div aria-hidden="true" style={{ position: 'fixed', left: -100_000, top: 0, width: SHEET_W, pointerEvents: 'none', zIndex: -1 }}>
+        <div aria-hidden="true" style={{ position: 'fixed', left: -100_000, top: 0, pointerEvents: 'none', zIndex: -1 }}>
           {job.sections.map((s) => (
             <div
               key={s}
               ref={(el) => {
                 refs.current[s] = el;
               }}
-              style={{ width: SHEET_W, height: SHEET_H }}
+              style={{ width: sizeOf(s).w, height: sizeOf(s).h }}
             >
               <ReportDocument section={s} />
             </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import { AgencyMark, Caret } from '@/components/ui';
-import { AGENCY, SECTIONS, SHEET_H, SHEET_W, sectionBySlug, type SectionSlug } from '@/lib/constants';
+import { AGENCY, ALL_TABS, sectionBySlug, sizeOf, type SectionSlug } from '@/lib/constants';
 import { cn } from '@/lib/cn';
 import { monthKey, monthLabel } from '@/lib/format';
 import { useReport } from './ReportContext';
@@ -36,17 +36,18 @@ function MonthSwitcher() {
 function PageViewer({ section }: { section: SectionSlug }) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const { w, h } = sizeOf(section);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setScale(Math.min(1, el.clientWidth / SHEET_W)));
+    const ro = new ResizeObserver(() => setScale(Math.min(1, el.clientWidth / w)));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [w]);
   return (
-    <div ref={ref} className="mx-auto w-full max-w-[960px]">
-      <div style={{ height: SHEET_H * scale }}>
-        <div className="border border-line" style={{ width: SHEET_W, transform: scale < 1 ? `scale(${scale})` : undefined, transformOrigin: '0 0' }}>
+    <div ref={ref} className="mx-auto w-full" style={{ maxWidth: w + 2 }}>
+      <div style={{ height: h * scale + 2 }}>
+        <div className="border border-line" style={{ width: w + 2, transform: scale < 1 ? `scale(${scale})` : undefined, transformOrigin: '0 0' }}>
           <ReportDocument id="report-capture" section={section} />
         </div>
       </div>
@@ -78,14 +79,14 @@ export function ReportShell({ banner }: { banner?: ReactNode }) {
           </div>
         </div>
         <nav aria-label="Report pages" className="mx-auto flex max-w-[1200px] gap-1 overflow-x-auto px-5">
-          {SECTIONS.map((s, i) => (
+          {ALL_TABS.map((s, i) => (
             <NavLink
               key={s.slug}
               to={href(s.slug)}
               aria-current={s.slug === section ? 'page' : undefined}
               className={cn('relative inline-flex h-10 shrink-0 items-center gap-2 px-3 text-[12.5px] font-semibold', s.slug === section ? 'text-ink' : 'text-muted hover:text-ink')}
             >
-              <span className={cn('inline-flex h-5 w-5 items-center justify-center text-[11px]', s.slug === section ? 'bg-grad text-black' : 'bg-panel')}>{i + 1}</span>
+              <span className={cn('inline-flex h-5 min-w-5 items-center justify-center px-1 text-[11px]', s.slug === section ? 'bg-grad text-black' : 'bg-panel')}>{s.slug === 'gbp' ? 'G' : i}</span>
               {s.title}
               {s.slug === section ? <span className="bg-grad absolute inset-x-0 bottom-0 h-[3px]" aria-hidden /> : null}
             </NavLink>
@@ -95,7 +96,15 @@ export function ReportShell({ banner }: { banner?: ReactNode }) {
       <main className="px-4 py-8">
         <PageViewer section={section} />
         <p className="no-capture mx-auto mt-4 max-w-[960px] text-center text-[11.5px] text-muted">
-          Each page is sized to fit one Word page (6.5in wide). Use <b>Copy page</b> and paste into your report, or download PNG / PDF.
+          {section === 'gbp' ? (
+            <>
+              The GBP Summary block for your report. Use <b>Copy page</b> and paste it into Word, or <b>Download PNG</b>. Fill it in under Monthly data → GBP Summary.
+            </>
+          ) : (
+            <>
+              Each page is sized to fit one Word page (6.5in wide). Use <b>Copy page</b> and paste into your report, or download PNG / PDF.
+            </>
+          )}
         </p>
       </main>
     </div>

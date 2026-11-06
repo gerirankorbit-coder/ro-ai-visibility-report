@@ -76,6 +76,37 @@ export const HoursDaySchema = z.object({
 });
 export type HoursDay = z.infer<typeof HoursDaySchema>;
 
+/** Colour scheme of a GBP Summary tile (sampled from the BrightLocal summary). */
+export const TILE_TONES = ['red', 'orange', 'green', 'grey'] as const;
+export const TileToneSchema = z.enum(TILE_TONES);
+export type TileTone = z.infer<typeof TileToneSchema>;
+
+/** Tile status options; the colour follows the status (OK = orange, Good = green, Poor = red). */
+export const TILE_STATUSES = [
+  { status: 'OK', tone: 'orange' },
+  { status: 'Good', tone: 'green' },
+  { status: 'Poor', tone: 'red' },
+] as const satisfies ReadonlyArray<{ status: string; tone: TileTone }>;
+
+/** Colour for a status; unknown/legacy statuses keep their stored colour. */
+export function toneForStatus(status: string, fallback: TileTone = 'orange'): TileTone {
+  return TILE_STATUSES.find((s) => s.status.toLowerCase() === status.trim().toLowerCase())?.tone ?? fallback;
+}
+
+const TileSchema = () => z.object({ status: z.string().max(24).default('OK'), tone: TileToneSchema.default('orange') }).default({});
+
+/** GBP Summary block: location, website and four status tiles, filled in manually each month. */
+export const GbpSummarySchema = z.object({
+  location: z.string().max(120).default(''),
+  website: z.string().max(300).default(''),
+  links: TileSchema(),
+  rank: TileSchema(),
+  gbp: TileSchema(),
+  onsite: TileSchema(),
+});
+export type GbpSummary = z.infer<typeof GbpSummarySchema>;
+export type GbpTileKey = 'links' | 'rank' | 'gbp' | 'onsite';
+
 export const MonthSchema = z.object({
   id: z.string(),
   client_id: z.string(),
@@ -94,6 +125,8 @@ export const MonthSchema = z.object({
   sources: z.array(SourceSchema),
   forum: ForumSchema,
   note: z.string().nullable().transform((v) => v ?? ''),
+  /** GBP Summary tiles for this month. */
+  gbp_summary: GbpSummarySchema.default({}),
   updated_at: z.string().nullable().optional(),
 });
 export type Month = z.infer<typeof MonthSchema>;

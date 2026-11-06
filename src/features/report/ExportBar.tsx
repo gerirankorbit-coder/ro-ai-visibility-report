@@ -53,7 +53,7 @@ export function ExportBar({ section }: { section: SectionSlug }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button size="sm" onClick={copy} disabled={isBusy} arrow="none" aria-label={`Copy ${sectionBySlug(section).title} as an image`}>
-        {working === 'Copy' ? 'Copying…' : 'Copy page'}
+        {working === 'Copy' ? 'Copying…' : section === 'gbp' ? 'Copy image' : 'Copy page'}
       </Button>
       <Button
         size="sm"
@@ -82,7 +82,7 @@ export function ExportBar({ section }: { section: SectionSlug }) {
           })
         }
       >
-        {working === 'All pages' ? 'Saving…' : `All ${SECTIONS.length} pages`}
+        {working === 'All pages' ? 'Saving…' : `All ${SECTIONS.length} AI pages`}
       </Button>
       <Button
         size="sm"
@@ -99,7 +99,7 @@ export function ExportBar({ section }: { section: SectionSlug }) {
           })
         }
       >
-        {working === 'PDF' ? 'Building…' : 'PDF'}
+        {working === 'PDF' ? 'Building…' : 'AI pages PDF'}
       </Button>
       {stage}
     </div>

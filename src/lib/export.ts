@@ -40,22 +40,23 @@ function maxCanvasArea(): number {
   return isSafari ? 16_700_000 : 260_000_000;
 }
 
-export async function nodeToBlob(node: HTMLElement, pixelRatio = 3): Promise<Blob> {
+export async function nodeToBlob(node: HTMLElement, pixelRatio = 3, size: { w: number; h: number } = { w: SHEET_W, h: SHEET_H }): Promise<Blob> {
   const { toBlob, getFontEmbedCSS } = await import('html-to-image');
-  const height = SHEET_H;
+  const width = size.w;
+  const height = size.h;
   let ratio = pixelRatio;
-  while (ratio > 1 && (CAPTURE_WIDTH * ratio * height * ratio > maxCanvasArea() || height * ratio > 32_000)) ratio -= 0.5;
+  while (ratio > 1 && (width * ratio * height * ratio > maxCanvasArea() || height * ratio > 32_000)) ratio -= 0.5;
   if (!fontCssCache) fontCssCache = getFontEmbedCSS(node).catch(() => '');
   const fontEmbedCSS = await fontCssCache;
   const blob = await toBlob(node, {
     pixelRatio: ratio,
     cacheBust: true,
     backgroundColor: T.white,
-    width: CAPTURE_WIDTH,
+    width,
     height,
-    canvasWidth: CAPTURE_WIDTH,
+    canvasWidth: width,
     canvasHeight: height,
-    style: { width: `${CAPTURE_WIDTH}px`, margin: '0', transform: 'none' },
+    style: { width: `${width}px`, margin: '0', transform: 'none' },
     fontEmbedCSS: fontEmbedCSS || undefined,
     filter: skip,
     preferredFontFormat: 'woff2',

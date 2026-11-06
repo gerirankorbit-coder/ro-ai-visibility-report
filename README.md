@@ -96,6 +96,7 @@ Open your project's **SQL Editor** and run, in order:
 1. `supabase/migrations/0001_init.sql`: creates the tables and the private `logos` bucket.
 2. `supabase/migrations/0002_private_password_gate.sql`: removes every access path for the public
    `anon` and `authenticated` roles. Only the server's service key can read or write data.
+3. `supabase/migrations/0003_gbp_summary.sql`: adds the per-month GBP Summary tiles (`months.gbp_summary`).
 
 Both files are safe to run again. If you already ran an older `0001`, just run `0002`.
 
@@ -136,6 +137,19 @@ Vercel require your Vercel login before the password screen.
 - `buildMonthStatement` returns `{lead, rest}` for the two-tone statements.
 - `splitWeekly(weekly, seed)` is a deterministic 4×7 split of the weekly totals. Weekends get less
   weight, and each week sums exactly to its total.
+
+### GBP Summary block (`src/features/report/GbpSummary.tsx`)
+
+A separate **GBP Summary** tab (first tab in the report view) reproduces the BrightLocal "Summary"
+block: the gradient "Summary" chip, Location, Website URL and four status tiles (Links & Authority,
+Rank Tracker, GBP Audit, On-Site SEO).
+- **Where to fill it in:** **Monthly data → GBP Summary**. For each tile, pick **OK**, **Good** or
+  **Poor**. The colour follows the status: OK is orange, Good is green and Poor is red (exact
+  BrightLocal colours).
+- **Location and Website:** they use the client's details unless you type something else.
+- **Next month:** it is copied with the rest of the month.
+- **Export:** it is captured at 683 × 196 px × 3 = 2049 × 588 px. Use **Copy image** to paste
+  it into Word, or **Download PNG**.
 
 ### The 3 report pages
 
