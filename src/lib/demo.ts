@@ -3,6 +3,7 @@
  * converted to the production data model. Used by /demo and by the seed script.
  */
 import type { Client, HoursDay, Month, Report, SourceStatus } from '@/types/schema';
+import { GmbSchema, type Gmb } from '@/types/gmb';
 import { DAY_NAMES } from '@/types/schema';
 import { DIRECTORIES } from './constants';
 import { nextMonthKey } from './format';
@@ -100,11 +101,66 @@ function buildMonths(clientId: string, seed: string, startKey: string, n: number
       nap, entity, schema_cov, knowledge, mentions,
       nap_fields, entity_parts, engines, work, sources, forum,
       note: notes[i] ?? '',
+      gmb: demoGmb(clientId, k, i, n),
       updated_at: null,
     });
     k = nextMonthKey(k);
   }
   return out;
+}
+
+const DEMO_KEYWORDS: Record<string, string[]> = {
+  summit: ['Emergency plumber Denver CO', 'Drain cleaning Denver', 'Water heater repair Denver', 'Plumber near me Denver', 'Sewer line repair Denver CO', 'Leak detection Denver', 'Plumbing company Denver', '24 hour plumber Denver', 'Tankless water heater Denver', 'Clogged drain Denver CO'],
+  harbor: ['Dentist San Diego CA', 'Teeth whitening San Diego', 'Invisalign San Diego', 'Dental implants Point Loma', 'Cosmetic dentist San Diego', 'Family dentist San Diego', 'Veneers San Diego CA'],
+};
+
+/** Sample GMB-report content so /demo can show every section (no screenshots in the demo). */
+function demoGmb(clientId: string, key: string, i: number, n: number): Gmb {
+  const r = rng(`${clientId}:${key}:gmb`);
+  const who = clientId === DEMO_IDS.summit ? 'summit' : 'harbor';
+  const kws = DEMO_KEYWORDS[who]!;
+  const t = n < 2 ? 1 : i / (n - 1);
+  const [y, m] = key.split('-').map(Number) as [number, number];
+  const days = new Date(y, m, 0).getDate();
+  const md = (d: number) => `${new Date(y, m - 1, d).toLocaleString('en-US', { month: 'short' })} ${d}`;
+  const scale = 0.5 + t;
+  const v = (b: number) => Math.max(0, Math.round((b + r() * b * 1.6) * scale));
+  return GmbSchema.parse({
+    sections: { posting: false, backlinks: false },
+    summary: { links: 'ok', rank: 'ok', gbp: 'ok', onsite: i === n - 1 ? 'ok' : 'attention' },
+    insights: {
+      mode: 'data',
+      range: `${md(1)} – ${md(days)}`,
+      views: Array.from({ length: days }, (_, d) => ({ date: md(d + 1), sd: v(2), sm: v(3), md: v(2), mm: v(1) })),
+      actions: Array.from({ length: days }, (_, d) => ({ date: md(d + 1), web: v(0.6), dir: v(0.9), call: v(0.3) })),
+      calls: [0, 1, 2, 0, 3, 1, 0].map((c) => Math.round(c * scale)),
+    },
+    reviews: {
+      total: Math.round(18 + 14 * t),
+      rating: 4.9,
+      items: [
+        { text: `We used ${who === 'summit' ? 'Summit Peak' : 'Harbor Line'} and were extremely satisfied with the quality of the work from start to finish. Friendly, on time and clear about pricing.`, stars: 5, date: md(Math.min(days, 23)) },
+        { text: '', stars: 5, date: md(Math.min(days, 18)) },
+        { text: 'Great service, highly recommend.', stars: 5, date: md(Math.min(days, 12)) },
+        { text: '', stars: 4, date: md(Math.min(days, 7)) },
+        { text: '', stars: 5, date: md(3) },
+      ],
+    },
+    videos: { links: [`https://padlet.com/example/${who}-business-story`] },
+    rankings: {
+      location: who === 'summit' ? 'Denver, CO 80204' : 'San Diego, CA 92106',
+      keywords: kws.map((keyword, ix) => ({ keyword, rank: String(Math.max(1, Math.round((ix + 1) * (1.8 - t) + r() * 2))) })),
+    },
+    localSeo: {
+      groups: [
+        { title: 'Video Submission', links: [`https://vimeo.com/example-${who}`, `https://www.behance.net/gallery/example-${who}`] },
+        { title: 'Articles Submission', links: [`https://www.example-directory.com/listing/${who}-expert-tips/`, `https://blog.example.net/${who}-what-to-know/`] },
+        { title: 'Web 2.0', links: [`https://${who}.wordpress.com/${key}/why-quality-matters/`, `https://sites.google.com/view/${who}/blog/top-tips`] },
+        { title: 'GMB Posting', links: [`https://share.google/example${who}1`, `https://share.google/example${who}2`] },
+      ],
+    },
+    quora: { link: `https://www.quora.com/profile/${who}`, linkLabel: `${who === 'summit' ? 'Summit Peak Plumbing & Drain' : 'Harbor Line Dental Studio'} - Quora` },
+  });
 }
 
 function hours(o: string, c: string, sat: readonly [string, string] | null, sun: readonly [string, string] | null): HoursDay[] {

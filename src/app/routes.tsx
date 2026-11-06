@@ -4,6 +4,7 @@ import { LoadingPage, MessagePage } from '@/features/report/StatusPages';
 import { TextLink } from '@/components/ui';
 
 const DemoReport = lazy(() => import('./DemoReport'));
+const DemoFullReport = lazy(() => import('./DemoFullReport'));
 const AdminApp = lazy(() => import('@/features/admin/AdminApp'));
 
 const s = (el: ReactNode) => <Suspense fallback={<LoadingPage />}>{el}</Suspense>;
@@ -19,6 +20,7 @@ function NotFound() {
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/admin" replace /> },
   { path: '/demo', element: <Navigate to="/demo/summit/overview" replace /> },
+  { path: '/demo/:client/full', element: s(<DemoFullReport />) },
   { path: '/demo/:client/:section?', element: s(<DemoReport />) },
   { path: '/admin/*', element: s(<AdminApp />) },
   { path: '*', element: <NotFound /> },

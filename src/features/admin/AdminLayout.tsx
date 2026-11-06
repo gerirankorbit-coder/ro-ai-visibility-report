@@ -22,7 +22,13 @@ export function AdminLayout({ children, crumbs }: { children: ReactNode; crumbs?
             ) : null}
           </div>
           <div className="flex items-center gap-5 text-[11px]">
-            <Link to="/demo" className="text-ink-2 hover:text-ink">
+            <Link to="/admin" className="text-ink-2 hover:text-ink">
+              Clients
+            </Link>
+            <Link to="/admin/updates" className="text-ink-2 hover:text-ink">
+              Google updates
+            </Link>
+            <Link to="/demo/summit/full" className="text-ink-2 hover:text-ink">
               Demo
             </Link>
             <span className="t-meta hidden items-center gap-1.5 text-muted md:inline-flex">

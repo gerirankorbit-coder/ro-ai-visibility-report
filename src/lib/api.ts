@@ -5,6 +5,7 @@
  */
 import { ClientSchema, type Client, type ClientInput, type Month, type MonthInput } from '@/types/schema';
 import { normalizeMonth } from './defaults';
+import { NoteSchema, type Note } from '@/types/gmb';
 
 export class ApiError extends Error {
   constructor(
@@ -133,4 +134,67 @@ export async function validateLogo(file: File): Promise<string | null> {
     }
   }
   return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Report screenshots (private bucket, streamed through /api/media)    */
+/* ------------------------------------------------------------------ */
+
+export const mediaUrl = (path: string) => `/api/media?path=${encodeURIComponent(path)}`;
+
+const MAX_MEDIA_W = 1800;
+
+/** Downscale large screenshots in the browser so uploads stay small and fast. */
+async function prepareImage(file: File): Promise<{ type: 'image/png' | 'image/jpeg' | 'image/webp'; base64: string }> {
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('Upload PNG, JPG or WebP images.');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('Could not read that image.'));
+      i.src = url;
+    });
+    const keep = img.naturalWidth <= MAX_MEDIA_W && file.size <= 1_500_000;
+    if (keep) return { type: file.type as 'image/png', base64: await fileToBase64(file) };
+    const scale = Math.min(1, MAX_MEDIA_W / img.naturalWidth);
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * scale);
+    c.height = Math.round(img.naturalHeight * scale);
+    const ctx = c.getContext('2d')!;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    const data = c.toDataURL('image/jpeg', 0.9);
+    return { type: 'image/jpeg', base64: data.slice(data.indexOf(',') + 1) };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+export async function uploadMedia(clientId: string, file: File): Promise<string> {
+  const { type, base64 } = await prepareImage(file);
+  return rpc<string>('media.upload', { clientId, contentType: type, base64 });
+}
+
+export async function deleteMedia(path: string): Promise<void> {
+  await rpc('media.delete', { path }).catch(() => undefined);
+}
+
+/* ------------------------------------------------------------------ */
+/* Monthly Google update note (shared by all clients)                  */
+/* ------------------------------------------------------------------ */
+
+export async function listNotes(): Promise<Note[]> {
+  return (await rpc<unknown[]>('notes.list')).map((n) => NoteSchema.parse(n));
+}
+export async function getNote(period: string): Promise<Note | null> {
+  const n = await rpc<unknown | null>('notes.get', { period });
+  return n ? NoteSchema.parse(n) : null;
+}
+export async function saveNote(note: Note): Promise<Note> {
+  return NoteSchema.parse(await rpc('notes.upsert', { note }));
+}
+export async function deleteNote(period: string): Promise<void> {
+  await rpc('notes.delete', { period });
 }

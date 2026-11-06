@@ -120,3 +120,51 @@ export async function blobsToPdf(blobs: Blob[]): Promise<Blob> {
   if (!blobs.length) throw new Error('Nothing to export');
   return doc.output('blob');
 }
+
+/* ------------------------------------------------------------------ */
+/* Full report PDF (Letter pages, clickable links)                     */
+/* ------------------------------------------------------------------ */
+
+const LETTER_W = 816;
+const LETTER_H = 1056;
+
+/**
+ * Build a Letter-size PDF from rendered report pages. Each page is rasterised at 2.5x (JPEG,
+ * ~240 dpi) and every <a href> on it becomes a clickable link annotation at the same spot.
+ */
+export async function pagesToPdf(nodes: HTMLElement[], onProgress?: (done: number, total: number) => void): Promise<Blob> {
+  const [{ toCanvas, getFontEmbedCSS }, { jsPDF }] = await Promise.all([import('html-to-image'), import('jspdf')]);
+  if (!nodes.length) throw new Error('Nothing to export');
+  if (!fontCssCache) fontCssCache = getFontEmbedCSS(nodes[0]!).catch(() => '');
+  const fontEmbedCSS = (await fontCssCache) || undefined;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait', compress: true });
+  const k = 612 / LETTER_W; // px -> pt
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]!;
+    const canvas = await toCanvas(node, {
+      pixelRatio: 2.5,
+      width: LETTER_W,
+      height: LETTER_H,
+      canvasWidth: LETTER_W,
+      canvasHeight: LETTER_H,
+      backgroundColor: '#ffffff',
+      cacheBust: false,
+      skipAutoScale: true,
+      fontEmbedCSS,
+      filter: skip,
+      style: { margin: '0', transform: 'none' },
+    });
+    if (i > 0) doc.addPage('letter', 'portrait');
+    doc.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 612, 792, undefined, 'FAST');
+    const base = node.getBoundingClientRect();
+    node.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => {
+      const href = a.getAttribute('href') ?? '';
+      if (!/^https?:\/\//i.test(href)) return;
+      for (const r of Array.from(a.getClientRects())) {
+        doc.link((r.left - base.left) * k, (r.top - base.top) * k, r.width * k, r.height * k, { url: href });
+      }
+    });
+    onProgress?.(i + 1, nodes.length);
+  }
+  return doc.output('blob');
+}

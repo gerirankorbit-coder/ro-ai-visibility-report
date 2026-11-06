@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { NavLink, useParams } from 'react-router-dom';
+import { Link, NavLink, useParams } from 'react-router-dom';
 import { AgencyMark, Caret } from '@/components/ui';
 import { AGENCY, SECTIONS, SHEET_H, SHEET_W, sectionBySlug, type SectionSlug } from '@/lib/constants';
 import { cn } from '@/lib/cn';
@@ -58,7 +58,8 @@ function PageViewer({ section }: { section: SectionSlug }) {
 export function ReportShell({ banner }: { banner?: ReactNode }) {
   const { section: raw } = useParams();
   const section = sectionBySlug(raw).slug;
-  const { report, currentKey, href } = useReport();
+  const { report, currentKey, href, basePath } = useReport();
+  const fullHref = basePath.endsWith('/preview') ? `${basePath.slice(0, -'/preview'.length)}/report?m=${currentKey}` : `${basePath}/full?m=${currentKey}`;
   useEffect(() => {
     document.title = `${sectionBySlug(section).title} · ${report.client.name} · ${monthLabel(currentKey)}`;
   }, [section, report.client.name, currentKey]);
@@ -73,6 +74,9 @@ export function ReportShell({ banner }: { banner?: ReactNode }) {
             <span className="font-normal text-muted">· {report.client.name}</span>
           </div>
           <div className="flex flex-wrap items-center gap-4">
+            <Link to={fullHref} className="text-[12px] font-semibold underline underline-offset-4">
+              Full GMB + AI report →
+            </Link>
             <MonthSwitcher />
             <ExportBar section={section} />
           </div>

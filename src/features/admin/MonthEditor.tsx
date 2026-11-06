@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, Close, IconButton, NumberInput, SelectInput, Slider, TextArea, Toggle, inputCls, useToast } from '@/components/ui';
+import { Button, ButtonLink, Close, IconButton, NumberInput, SelectInput, Slider, TextArea, Toggle, inputCls, useToast } from '@/components/ui';
 import { createMonth, deleteMonth, updateMonth } from '@/lib/api';
 import { ENGINES, ENTITY, NAP_FIELDS, PHASES, STATUS_LABEL, WORK } from '@/lib/constants';
 import { emptyMonthInput, monthToInput } from '@/lib/defaults';
@@ -11,6 +11,8 @@ import { FormGroup } from './BusinessInfoForm';
 import { LivePreview } from './LivePreview';
 import { SaveStatus } from './SaveStatus';
 import { AddMonthDialog, type AddMonthChoice } from './AddMonthDialog';
+import { GmbEditor } from './GmbEditor';
+import { carryOverGmb } from '@/types/gmb';
 import { useAutosave } from './useAutosave';
 
 export function MonthEditor({ client, months }: { client: Client; months: Month[] }) {
@@ -42,11 +44,12 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
   );
 
   const [adding, setAdding] = useState(false);
+  const [part, setPart] = useState<'gmb' | 'ai'>('gmb');
   const add = useMutation({
     mutationFn: async ({ key: k, copyFrom }: AddMonthChoice) => {
       await save.saveNow();
       const period = `${k}-01`;
-      return createMonth(client.id, copyFrom ? { ...monthToInput(copyFrom), period, published: false, note: '' } : emptyMonthInput(period));
+      return createMonth(client.id, copyFrom ? { ...monthToInput(copyFrom), period, published: false, note: '', gmb: carryOverGmb(copyFrom.gmb) } : emptyMonthInput(period));
     },
     onSuccess: async (m) => {
       await qc.invalidateQueries({ queryKey: key });
@@ -86,7 +89,7 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
   const f = draft.forum;
 
   return (
-    <div className="grid grid-cols-1 gap-8 min-[1440px]:grid-cols-[minmax(0,1fr)_minmax(480px,40%)]">
+    <div className={`grid grid-cols-1 gap-8 ${part === 'ai' ? 'min-[1440px]:grid-cols-[minmax(0,1fr)_minmax(480px,40%)]' : ''}`}>
       <div className="min-w-0">
         {/* Month controls */}
         <div className="flex flex-wrap items-end gap-4 border-t border-line pt-6">
@@ -146,6 +149,33 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
           </div>
         </div>
 
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          {(
+            [
+              ['gmb', 'GMB report', 'Summary, insights, reviews, rankings, posts, links, screenshots'],
+              ['ai', 'AI data', 'AI readiness, NAP, entity, listings, community'],
+            ] as const
+          ).map(([v, t, d]) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={part === v}
+              onClick={() => setPart(v)}
+              className={`flex flex-col items-start border px-4 py-2.5 text-left ${part === v ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink'}`}
+            >
+              <span className="text-[13px] font-bold">{t}</span>
+              <span className={`text-[11px] ${part === v ? 'text-white/70' : 'text-muted'}`}>{d}</span>
+            </button>
+          ))}
+          <ButtonLink to={`/admin/clients/${client.id}/report?m=${monthKey(draft.period)}`} size="sm" arrow="up-right" className="ml-auto" onClick={() => void save.saveNow()}>
+            Full report (PDF)
+          </ButtonLink>
+        </div>
+
+        {part === 'gmb' ? (
+          <GmbEditor clientId={client.id} gmb={draft.gmb} onChange={(fn) => up((m) => ({ ...m, gmb: fn(m.gmb) }))} />
+        ) : (
+        <>
         <FormGroup title="Core metrics" aside="0 to 100. AI Readiness is calculated from these and the engine scores.">
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Slider label="NAP Accuracy" value={draft.nap} onChange={(v) => up((m) => ({ ...m, nap: v }))} />
@@ -282,9 +312,11 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
         <FormGroup title="Monthly highlight" aside="Shown to the client on the Overview and in Milestones.">
           <TextArea label="Highlight (visible to client)" id="m-note" rows={4} value={draft.note} onChange={(e) => up((m) => ({ ...m, note: e.target.value }))} />
         </FormGroup>
+        </>
+        )}
       </div>
 
-      <div className="hidden min-[1440px]:block">
+      <div className={part === 'ai' ? 'hidden min-[1440px]:block' : 'hidden'}>
         <div className="sticky top-16 h-[calc(100vh-88px)]">
           <LivePreview client={client} months={previewMonths} current={draft} />
         </div>
