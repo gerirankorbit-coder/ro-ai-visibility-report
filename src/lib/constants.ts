@@ -63,17 +63,31 @@ export const DIRECTORIES = [
   'Chamber of Commerce',
 ] as const;
 
-export type SectionSlug = 'summary' | 'signals' | 'community';
+/** The 3 AI report pages. */
+export type PageSlug = 'summary' | 'signals' | 'community';
+/** Every capturable tab: the 3 AI pages plus the GBP Summary block. */
+export type SectionSlug = PageSlug | 'gbp';
 /** The report is 3 pages, each sized to fit one Word page (Letter, 6.5in content width). */
-export const SECTIONS: ReadonlyArray<{ slug: SectionSlug; nav: string; title: string; file: string }> = [
+export const SECTIONS: ReadonlyArray<{ slug: PageSlug; nav: string; title: string; file: string }> = [
   { slug: 'summary', nav: 'Summary', title: 'AI Visibility Summary', file: '1-ai-visibility-summary' },
   { slug: 'signals', nav: 'AI Signals', title: 'AI Search Signals', file: '2-ai-search-signals' },
   { slug: 'community', nav: 'Community & Progress', title: 'Community & Monthly Progress', file: '3-community-progress' },
 ];
+/** Stand-alone GBP Summary block (Summary chip + four status tiles), screenshotted on its own. */
+export const GBP_TAB = { slug: 'gbp' as const, nav: 'GBP Summary', title: 'GBP Summary', file: 'gbp-summary' };
+export const ALL_TABS: ReadonlyArray<{ slug: SectionSlug; nav: string; title: string; file: string }> = [GBP_TAB, ...SECTIONS];
+
 export function sectionBySlug(s: string | undefined) {
-  return SECTIONS.find((x) => x.slug === s) ?? SECTIONS[0];
+  return ALL_TABS.find((x) => x.slug === s) ?? SECTIONS[0]!;
 }
+export const isPageSlug = (s: SectionSlug): s is PageSlug => s !== 'gbp';
 
 /** Page size in CSS px. 960 x 1240 = 6.5in x 8.4in at the same ratio, so a page fits a Word page with header/footer. */
 export const SHEET_W = 960;
 export const SHEET_H = 1240;
+/** GBP Summary block size (CSS px), same as the BrightLocal summary it reproduces. */
+export const GBP_W = 683;
+export const GBP_H = 196;
+
+/** Capture size of a tab. */
+export const sizeOf = (s: SectionSlug) => (s === 'gbp' ? { w: GBP_W, h: GBP_H } : { w: SHEET_W, h: SHEET_H });

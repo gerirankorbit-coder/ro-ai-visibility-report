@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, Close, IconButton, NumberInput, SelectInput, Slider, TextArea, Toggle, inputCls, useToast } from '@/components/ui';
+import { Button, Close, IconButton, TextInput, NumberInput, SelectInput, Slider, TextArea, Toggle, inputCls, useToast } from '@/components/ui';
 import { createMonth, deleteMonth, updateMonth } from '@/lib/api';
 import { ENGINES, ENTITY, NAP_FIELDS, PHASES, STATUS_LABEL, WORK } from '@/lib/constants';
 import { emptyMonthInput, monthToInput } from '@/lib/defaults';
@@ -10,6 +10,8 @@ import { SOURCE_STATUSES, type Client, type Forum, type Month, type SourceStatus
 import { FormGroup } from './BusinessInfoForm';
 import { LivePreview } from './LivePreview';
 import { SaveStatus } from './SaveStatus';
+import { GbpSummaryView, TILES, TONES } from '@/features/report/GbpSummary';
+import { TILE_TONES } from '@/types/schema';
 import { AddMonthDialog, type AddMonthChoice } from './AddMonthDialog';
 import { useAutosave } from './useAutosave';
 
@@ -145,6 +147,57 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
             <SaveStatus state={save} label="Save month" onSave={() => void save.saveNow().then((ok) => ok && toast(`${monthLabel(monthKey(draft.period))} saved`))} />
           </div>
         </div>
+
+        <FormGroup title="GBP Summary" aside="The Summary block with four status tiles. Choose the text and colour of each tile; Location and Website use the client's details unless you type something else.">
+          <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <TextInput label="Location" placeholder={client.locality || 'Houston, TX'} value={draft.gbp_summary.location} onChange={(e) => up((m) => ({ ...m, gbp_summary: { ...m.gbp_summary, location: e.target.value } }))} />
+              <TextInput label="Website URL" placeholder={client.website || 'www.example.com'} value={draft.gbp_summary.website} onChange={(e) => up((m) => ({ ...m, gbp_summary: { ...m.gbp_summary, website: e.target.value } }))} />
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {TILES.map((t) => {
+                const tile = draft.gbp_summary[t.key];
+                const patch = (p: Partial<typeof tile>) => up((m) => ({ ...m, gbp_summary: { ...m.gbp_summary, [t.key]: { ...m.gbp_summary[t.key], ...p } } }));
+                return (
+                  <div key={t.key} className="grid grid-cols-[1fr_96px] gap-3 border border-line bg-white p-3">
+                    <div className="col-span-2 flex items-center gap-2 text-[12.5px] font-bold">
+                      <span className="inline-block h-3 w-3" style={{ background: TONES[tile.tone].bar }} aria-hidden />
+                      {t.label}
+                    </div>
+                    <div>
+                      <span className="t-meta mb-1.5 block uppercase tracking-[0.06em] text-muted">Colour</span>
+                      <div role="radiogroup" aria-label={`${t.label} colour`} className="flex gap-1.5">
+                        {TILE_TONES.map((tone) => (
+                          <button
+                            key={tone}
+                            type="button"
+                            role="radio"
+                            aria-checked={tile.tone === tone}
+                            title={TONES[tone].label}
+                            onClick={() => patch({ tone })}
+                            className={`flex h-9 flex-1 items-center justify-center border text-[11px] font-semibold ${tile.tone === tone ? 'border-ink ring-1 ring-ink' : 'border-line'}`}
+                            style={{ background: TONES[tone].bg, color: TONES[tone].bar }}
+                          >
+                            {TONES[tone].label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <TextInput label="Status text" maxLength={24} value={tile.status} onChange={(e) => patch({ status: e.target.value })} list="gbp-status-options" />
+                  </div>
+                );
+              })}
+              <datalist id="gbp-status-options">
+                {['OK', 'Good', 'Excellent', 'Needs Work', 'Poor', 'In Progress'].map((o) => (
+                  <option key={o} value={o} />
+                ))}
+              </datalist>
+            </div>
+            <div className="overflow-x-auto border border-line bg-white">
+              <GbpSummaryView data={draft.gbp_summary} location={draft.gbp_summary.location || client.locality} website={draft.gbp_summary.website || client.website} />
+            </div>
+          </div>
+        </FormGroup>
 
         <FormGroup title="Core metrics" aside="0 to 100. AI Readiness is calculated from these and the engine scores.">
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
