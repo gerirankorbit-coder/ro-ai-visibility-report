@@ -4,7 +4,6 @@ import { serverDb } from './db.js';
 import { gateRequest } from './gate.js';
 import { handleLogin, handleLogout } from './login.js';
 import { handleRpc } from './rpc.js';
-import { handleMedia } from './media.js';
 import { readGateEnv } from './session.js';
 
 type EnvLike = Record<string, string | undefined>;
@@ -44,7 +43,6 @@ export function privateGate(env: EnvLike): Plugin {
         if (path === '/api/login') return send(res, await handleLogin(request, gateEnv, db));
         if (path === '/api/logout') return send(res, handleLogout(request));
         if (path === '/api/rpc') return send(res, await handleRpc(request, gateEnv, db));
-        if (path === '/api/media') return send(res, await handleMedia(request, gateEnv, db));
         next();
       } catch (e) {
         next(e);

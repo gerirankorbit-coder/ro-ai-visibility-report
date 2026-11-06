@@ -66,7 +66,7 @@ export function AddMonthDialog({ open, onClose, months, onAdd, busy }: { open: b
         </SelectInput>
         <p className="text-[12px] leading-relaxed text-ink-2">
           {copyFrom
-            ? `Copied from ${monthLabel(monthKey(copyFrom.period))}: all AI numbers, listings, community data, report sections, keywords and ranks, summary statuses, Quora and video details. Cleared for the new month: GMB post and backlink screenshots, Local SEO links, insights data and the highlight note. The month starts as a draft.`
+            ? `All numbers, listings and community data are copied from ${monthLabel(monthKey(copyFrom.period))}, so you only change what moved this month. The highlight note starts empty and the month starts as a draft.`
             : 'Every value starts at zero and all 12 standard directories are listed as Queued.'}
         </p>
       </div>

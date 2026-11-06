@@ -63,11 +63,8 @@ export default function ClientEditor() {
               <ExportPdfButton />
             </ReportProvider>
           ) : null}
-          <ButtonLink to={`/admin/clients/${id}/preview`} size="sm" variant="outline" arrow="up-right">
-            AI pages
-          </ButtonLink>
-          <ButtonLink to={`/admin/clients/${id}/report`} size="sm" arrow="up-right">
-            Full report (PDF)
+          <ButtonLink to={`/admin/clients/${id}/preview`} size="sm" arrow="up-right">
+            Preview client view
           </ButtonLink>
         </div>
       </div>

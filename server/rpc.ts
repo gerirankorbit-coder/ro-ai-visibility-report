@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ClientSchema, MonthSchema } from '../src/types/schema.js';
-import { NoteSchema } from '../src/types/gmb.js';
 import { SECURITY_HEADERS } from './gatePage.js';
 import { isAuthenticated, sameOrigin, type GateEnv } from './session.js';
 
@@ -9,9 +8,6 @@ const uuid = z.string().uuid();
 const ClientInput = ClientSchema.omit({ id: true, created_at: true }).strict();
 const MonthInput = MonthSchema.omit({ id: true, client_id: true, updated_at: true }).strict();
 const LOGO_TYPES = ['image/png', 'image/svg+xml'] as const;
-const MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
-export const MEDIA_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/;
-const period = z.string().regex(/^\d{4}-\d{2}-01$/);
 
 const Body = z.discriminatedUnion('op', [
   z.object({ op: z.literal('clients.list') }),
@@ -26,12 +22,6 @@ const Body = z.discriminatedUnion('op', [
   z.object({ op: z.literal('months.delete'), id: uuid }),
   z.object({ op: z.literal('logo.upload'), clientId: uuid, contentType: z.enum(LOGO_TYPES), base64: z.string().max(3_000_000) }),
   z.object({ op: z.literal('logo.get'), path: z.string().regex(/^[0-9a-f-]{36}\/logo-\d+\.(png|svg)$/) }),
-  z.object({ op: z.literal('media.upload'), clientId: uuid, contentType: z.enum(MEDIA_TYPES), base64: z.string().max(4_000_000) }),
-  z.object({ op: z.literal('media.delete'), path: z.string().regex(MEDIA_PATH) }),
-  z.object({ op: z.literal('notes.list') }),
-  z.object({ op: z.literal('notes.get'), period }),
-  z.object({ op: z.literal('notes.upsert'), note: NoteSchema }),
-  z.object({ op: z.literal('notes.delete'), period }),
 ]);
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...SECURITY_HEADERS, 'Content-Type': 'application/json' } });
@@ -100,26 +90,6 @@ export async function handleRpc(req: Request, env: GateEnv, db: SupabaseClient |
         unwrap(await db.storage.from('logos').upload(path, bytes, { contentType: body.contentType, upsert: false }));
         return json(200, { data: path });
       }
-      case 'media.upload': {
-        const bytes = decodeBase64(body.base64);
-        if (bytes.length > 3 * 1024 * 1024) return json(413, { error: 'Image must be 3 MB or smaller after resizing.' });
-        const ext = body.contentType === 'image/png' ? 'png' : body.contentType === 'image/webp' ? 'webp' : 'jpg';
-        const path = `${body.clientId}/${crypto.randomUUID()}.${ext}`;
-        unwrap(await db.storage.from('report-media').upload(path, bytes, { contentType: body.contentType, upsert: false }));
-        return json(200, { data: path });
-      }
-      case 'media.delete':
-        await db.storage.from('report-media').remove([body.path]);
-        return json(200, { data: null });
-      case 'notes.list':
-        return json(200, { data: unwrap(await db.from('report_notes').select('*').order('period', { ascending: false })) });
-      case 'notes.get':
-        return json(200, { data: unwrap(await db.from('report_notes').select('*').eq('period', body.period).maybeSingle()) });
-      case 'notes.upsert':
-        return json(200, { data: unwrap(await db.from('report_notes').upsert({ ...body.note, updated_at: new Date().toISOString() }).select('*').single()) });
-      case 'notes.delete':
-        unwrap(await db.from('report_notes').delete().eq('period', body.period));
-        return json(200, { data: null });
       case 'logo.get': {
         const { data, error } = await db.storage.from('logos').download(body.path);
         if (error || !data) return json(200, { data: null });

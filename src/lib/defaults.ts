@@ -1,6 +1,5 @@
 import type { Client, ClientInput, Forum, HoursDay, Month, MonthInput } from '@/types/schema';
 import { DAY_NAMES, MonthSchema } from '@/types/schema';
-import { defaultGmb } from '@/types/gmb';
 import { DIRECTORIES } from './constants';
 
 export const defaultForum = (): Forum => ({
@@ -24,7 +23,6 @@ export function emptyMonthInput(period: string): MonthInput {
     sources: DIRECTORIES.map((name) => ({ name, status: 'queued' as const, updated_at: null })),
     forum: defaultForum(),
     note: '',
-    gmb: defaultGmb(),
   };
 }
 
@@ -72,7 +70,6 @@ export function normalizeMonth(row: Record<string, unknown>): Month {
       : base.sources,
     forum: { ...forum, weekly: [0, 1, 2, 3].map((i) => Number(weekly[i] ?? 0)) },
     note: (row.note as string | null) ?? '',
-    gmb: isObj(row.gmb) ? row.gmb : {},
     updated_at: (row.updated_at as string | null) ?? null,
   };
   return MonthSchema.parse(candidate);

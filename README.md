@@ -16,12 +16,9 @@ hand-built SVG charts ·
 
 | Route | What it is |
 |---|---|
-| `/demo/:client/full` | The full GMB + AI report (all pages) with demo data, and the PDF export. |
 | `/demo/:client/:page?` | The report with local demo data (`summit`, `harbor`). Pages: `summary`, `signals`, `community`. `?m=YYYY-MM` picks a month. No Supabase needed. |
 | `/admin` | Client list. |
 | `/admin/clients/:id` | Client editor: Business info · Monthly data. |
-| `/admin/clients/:id/report` | The **full GMB + AI report** for a client and month, with **Download full report (PDF)**. |
-| `/admin/updates` | The monthly Google update note, shared by every client's report. |
 | `/admin/clients/:id/preview/:page?` | The 3-page report for a client, including draft months. Copy / PNG / PDF export live here. |
 
 ## Privacy and access
@@ -99,8 +96,6 @@ Open your project's **SQL Editor** and run, in order:
 1. `supabase/migrations/0001_init.sql`: creates the tables and the private `logos` bucket.
 2. `supabase/migrations/0002_private_password_gate.sql`: removes every access path for the public
    `anon` and `authenticated` roles. Only the server's service key can read or write data.
-3. `supabase/migrations/0003_full_report.sql`: adds per-month report content (`months.gmb`), the
-   shared `report_notes` table and the private `report-media` bucket for screenshots.
 
 Both files are safe to run again. If you already ran an older `0001`, just run `0002`.
 
@@ -141,42 +136,6 @@ Vercel require your Vercel login before the password screen.
 - `buildMonthStatement` returns `{lead, rest}` for the two-tone statements.
 - `splitWeekly(weekly, seed)` is a deterministic 4×7 split of the weekly totals. Weekends get less
   weight, and each week sums exactly to its total.
-
-### Full GMB + AI report (`src/features/fullreport/`)
-
-The tool builds the whole monthly client report, laid out like the Rank Orbit Word report:
-- Letter pages (8.5in × 11in).
-- The "RANK ORBIT" logo header, gradient corners and page numbers, with a `rankorbit.com` footer.
-- Montserrat ExtraBold for gradient chips and title bars, and Lucida Sans Unicode for body text
-  (a Windows system font, with fallbacks on other systems).
-- The cover and Thank You pages use the original brand images in `public/brand/`, placed with the
-  same positions and rotations as the Word file.
-
-| Page(s) | Source |
-|---|---|
-| Cover + Table of Contents | Client name and the cover title; the TOC lists only the sections that are on |
-| Google Core Update + Note | **Admin → Google updates** (one note per month, shared by all clients) |
-| Summary + Insights | 4 status tiles. Insights charts are drawn from pasted BrightLocal rows (Views, Actions) and weekday phone calls, or come from uploaded screenshots |
-| Reviews | Total, average rating and up to 5 reviews (or one screenshot) |
-| Business Story through Videos | Thumbnail screenshot(s) + Live View links |
-| Rankings | Keywords and ranks (carried over every month), or keywords only |
-| GMB Posting / Local Backlink Acquisitions | Screenshots, 4 per page, paged automatically |
-| Local SEO Working | Link groups (Video Submission, Articles, Web 2.0, GMB Posting…), paged automatically |
-| Quora | Screenshots + Live View link |
-| AI Optimization | The 3 AI pages below, fitted into Letter pages |
-| Thank You | Fixed closing page |
-
-How each month works:
-- **Sections:** every section can be turned on or off per client and month (**Monthly data → GMB
-  report → Report sections**). Empty sections are left out, and the report page lists a warning
-  for each one.
-- **Next month:** **+ Add month** carries the setup forward (sections, keywords and ranks,
-  statuses, Quora, videos, link-group titles). It clears what is new each month: screenshots,
-  Local SEO links and insights data.
-- **Screenshots:** they go to the private `report-media` bucket (resized in the browser to at most
-  1800px wide) and are served only to a signed-in session through `/api/media`.
-- **PDF:** **Download full report (PDF)** renders every page at 2.5× (JPEG) into a Letter PDF and
-  adds a clickable link annotation for every link on the page.
 
 ### The 3 report pages
 
@@ -242,7 +201,7 @@ src/
   lib/                api (calls /api/rpc), metrics, export, format, tokens, demo data
   types/              Zod schemas
 server/               password gate, session cookies, login rate limit, data API (server-only)
-api/                  Vercel functions: login, logout, rpc, media
+api/                  Vercel functions: login, logout, rpc
 middleware.ts         Vercel Middleware: locks every route
 supabase/
   migrations/0001_init.sql, 0002_private_password_gate.sql

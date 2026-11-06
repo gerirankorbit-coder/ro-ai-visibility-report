@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { GmbSchema } from './gmb.js';
 
 const pct = z.number().min(0).max(100);
 const count = z.number().int().min(0);
@@ -95,8 +94,6 @@ export const MonthSchema = z.object({
   sources: z.array(SourceSchema),
   forum: ForumSchema,
   note: z.string().nullable().transform((v) => v ?? ''),
-  /** Full GMB report content for this month (sections, screenshots, rankings, links…). */
-  gmb: GmbSchema.default({}),
   updated_at: z.string().nullable().optional(),
 });
 export type Month = z.infer<typeof MonthSchema>;
