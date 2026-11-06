@@ -114,14 +114,8 @@ function demoGbpSummary(clientId: string, key: string, i: number, n: number): Gb
   const r = rng(`${clientId}:${key}:gbp`);
   const summit = clientId === DEMO_IDS.summit;
   const [y, m] = key.split('-').map(Number) as [number, number];
-  const start = new Date(y, m - 1, 6);
-  const day = (d: number) => {
-    const x = new Date(start);
-    x.setDate(start.getDate() + d);
-    return x.toLocaleString('en-US', { month: 'short', day: 'numeric' });
-  };
   const s = 0.6 + (n < 2 ? 1 : i / (n - 1)) * 0.6;
-  const v = (base: number) => Math.max(0, Math.round((base * (0.4 + r() * 1.2)) * s));
+  const v = (base: number) => Math.max(0, Math.round(base * (0.85 + r() * 0.3) * s));
   const last = i === n - 1;
   return GbpSummarySchema.parse({
     location: summit ? 'Denver, CO' : 'San Diego, CA',
@@ -131,9 +125,9 @@ function demoGbpSummary(clientId: string, key: string, i: number, n: number): Gb
     gbp: { status: last ? 'Good' : 'OK', tone: last ? 'green' : 'orange' },
     onsite: { status: i === 0 ? 'Poor' : 'OK', tone: i === 0 ? 'red' : 'orange' },
     updated: `${new Date(y, m, 5).toLocaleString('en-US', { day: 'numeric' })}th ${new Date(y, m, 5).toLocaleString('en-US', { month: 'short', year: 'numeric' })} at 22:21:47`,
-    range: 'Last 30 Days',
-    views: Array.from({ length: 31 }, (_, d) => ({ date: day(d), sd: v(2), sm: v(24), md: v(1.5), mm: v(19) })),
-    actions: Array.from({ length: 31 }, (_, d) => ({ date: day(d), web: v(0.4), dir: v(2), call: v(0.15) })),
+    mode: 'monthly',
+    vt: { sd: v(60), sm: v(700), md: v(40), mm: v(560) },
+    at: { web: v(12), dir: v(60), call: v(5) },
     calls: [2, 1, 0, 0, 1, 0, 0].map((c) => Math.round(c * s)),
   });
 }

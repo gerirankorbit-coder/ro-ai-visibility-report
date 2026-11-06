@@ -1,5 +1,35 @@
 import type { ReactNode } from 'react';
-import { DAY_NAMES, type GbpSummary } from '@/types/schema';
+import { DAY_NAMES, type GbpSummary, type Month } from '@/types/schema';
+import { monthKey, monthLabel } from '@/lib/format';
+
+/** One month's totals (typed in, or summed from pasted daily rows). */
+export interface MonthTotals {
+  label: string;
+  vt: { sd: number; sm: number; md: number; mm: number };
+  at: { web: number; dir: number; call: number };
+}
+
+export function totalsOf(g: GbpSummary) {
+  if (g.mode === 'monthly') return { vt: g.vt, at: g.at };
+  const add = <T extends Record<string, number>>(rows: Array<Record<string, unknown>>, keys: Array<keyof T>) =>
+    Object.fromEntries(keys.map((k) => [k, rows.reduce((a, r) => a + (Number(r[k as string]) || 0), 0)])) as T;
+  return { vt: add<MonthTotals['vt']>(g.views, ['sd', 'sm', 'md', 'mm']), at: add<MonthTotals['at']>(g.actions, ['web', 'dir', 'call']) };
+}
+
+const hasData = (t: { vt: MonthTotals['vt']; at: MonthTotals['at'] }) => Object.values(t.vt).some(Boolean) || Object.values(t.at).some(Boolean);
+
+/**
+ * Month-by-month totals up to (and including) `current`, last 12 months, starting from the
+ * first month that has any insight numbers. The current month is always included.
+ */
+export function buildTrend(months: Month[], current: Month): MonthTotals[] {
+  const upto = months.filter((m) => m.period <= current.period).slice(-12);
+  const rows = upto.map((m) => ({ label: monthLabel(monthKey(m.period), 'short'), ...totalsOf(m.id === current.id ? current.gbp_summary : m.gbp_summary) }));
+  const first = rows.findIndex((r) => hasData(r));
+  const trimmed = first < 0 ? rows.slice(-1) : rows.slice(first);
+  const years = new Set(upto.map((m) => m.period.slice(0, 4)));
+  return years.size > 1 ? trimmed.map((r, i) => ({ ...r, label: monthLabel(monthKey(upto[upto.length - trimmed.length + i]!.period), 'shortYear') })) : trimmed;
+}
 
 /**
  * Views / Actions / Phone calls charts drawn like the BrightLocal insights panels.
@@ -67,7 +97,7 @@ function Panel({ title, info = false, children, label }: { title: string; info?:
 }
 
 /** Overlapping translucent area chart (series drawn back to front) with a totals legend on the right. */
-function AreaPanel({ title, totalLabel, labels, series, info, legend }: { title: string; totalLabel: string; labels: string[]; series: Series[]; info?: boolean; legend?: string[] }) {
+function AreaPanel({ title, totalLabel, labels, series, info, legend, legendFromLast = false }: { title: string; totalLabel: string; labels: string[]; series: Series[]; info?: boolean; legend?: string[]; legendFromLast?: boolean }) {
   const legendSeries = legend ? legend.map((n) => series.find((s) => s.name === n)!).filter(Boolean) : series;
   const x0 = 33;
   const x1 = 555;
@@ -78,7 +108,10 @@ function AreaPanel({ title, totalLabel, labels, series, info, legend }: { title:
   const x = (i: number) => (n < 2 ? (x0 + x1) / 2 : x0 + ((x1 - x0) * i) / (n - 1));
   const y = (v: number) => yBase - ((yBase - yTop) * v) / max;
   const step = n > 16 ? 2 : 1;
-  const total = sum(series.map((s) => sum(s.values)));
+  // Daily rows: legend shows the sum of the period. Monthly trend: legend shows the current (last) month.
+  const valueOf = (s: Series) => (legendFromLast ? (s.values[s.values.length - 1] ?? 0) : sum(s.values));
+  const total = sum(series.map(valueOf));
+  const barW = Math.min(46, (x1 - x0) / (series.length * 2.2));
   return (
     <Panel title={title} info={info} label={`${title}: ${totalLabel} ${total}`}>
       {ticks.map((t) => (
@@ -90,7 +123,13 @@ function AreaPanel({ title, totalLabel, labels, series, info, legend }: { title:
         </g>
       ))}
       {series.map((s) => {
-        if (n < 2) return <rect key={s.name} x={x(0) - 4} y={y(s.values[0] ?? 0)} width={8} height={yBase - y(s.values[0] ?? 0)} fill={s.c.fill} fillOpacity={0.8} stroke={s.c.line} strokeWidth={0.6} />;
+        if (n < 2) {
+          // A single month: one bar per series, side by side.
+          const order = legend ? legend.indexOf(s.name) : series.indexOf(s);
+          const bx = (x0 + x1) / 2 + (order - series.length / 2) * (barW + 6) + 3;
+          const v = s.values[0] ?? 0;
+          return <rect key={s.name} x={bx} y={y(v)} width={barW} height={yBase - y(v)} fill={s.c.fill} fillOpacity={0.9} stroke={s.c.line} strokeWidth={0.6} shapeRendering="crispEdges" />;
+        }
         const pts = s.values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
         return <polygon key={s.name} points={`${x(0).toFixed(1)},${yBase} ${pts} ${x(n - 1).toFixed(1)},${yBase}`} fill={s.c.fill} fillOpacity={0.78} stroke={s.c.line} strokeOpacity={0.7} strokeWidth={0.6} strokeLinejoin="round" />;
       })}
@@ -101,17 +140,17 @@ function AreaPanel({ title, totalLabel, labels, series, info, legend }: { title:
           </text>
         ) : null,
       )}
-      <text x={574} y={49} fontSize={7.4} fontWeight={600} fill="#111" fontFamily={FONT}>
+      <text x={566} y={49} fontSize={7.4} fontWeight={600} fill="#111" fontFamily={FONT}>
         {totalLabel}: {kFmt(total)}
       </text>
       {legendSeries.map((s, i) => (
-        <g key={s.name} transform={`translate(574, ${60 + i * 26})`}>
+        <g key={s.name} transform={`translate(566, ${60 + i * 26})`}>
           <rect width={13} height={13} rx={2} fill={s.c.fill} stroke={s.c.line} strokeWidth={0.8} />
           <text x={20} y={6.5} fontSize={6.8} fontWeight={600} fill="#111" fontFamily={FONT}>
             {s.name}
           </text>
           <text x={20} y={14.8} fontSize={6.8} fontWeight={600} fill="#111" fontFamily={FONT}>
-            {kFmt(sum(s.values))}
+            {kFmt(valueOf(s))}
           </text>
         </g>
       ))}
@@ -167,7 +206,16 @@ function FilterPill({ text }: { text: string }) {
 }
 
 /** "Last Updated" row + the three insight panels (placed under the Summary tiles). */
-export function GbpInsights({ data }: { data: GbpSummary }) {
+export function GbpInsights({ data, trend }: { data: GbpSummary; trend?: MonthTotals[] }) {
+  const monthly = data.mode === 'monthly';
+  const t = monthly ? (trend && trend.length ? trend : [{ label: 'This month', ...totalsOf(data) }]) : [];
+  const range = data.range || (monthly ? (t.length > 1 ? `Last ${t.length} Months` : 'This Month') : '');
+  const views = monthly
+    ? { labels: t.map((r) => r.label), sd: t.map((r) => r.vt.sd), sm: t.map((r) => r.vt.sm), md: t.map((r) => r.vt.md), mm: t.map((r) => r.vt.mm) }
+    : { labels: data.views.map((r) => r.date), sd: data.views.map((r) => r.sd), sm: data.views.map((r) => r.sm), md: data.views.map((r) => r.md), mm: data.views.map((r) => r.mm) };
+  const actions = monthly
+    ? { labels: t.map((r) => r.label), web: t.map((r) => r.at.web), dir: t.map((r) => r.at.dir), call: t.map((r) => r.at.call) }
+    : { labels: data.actions.map((r) => r.date), web: data.actions.map((r) => r.web), dir: data.actions.map((r) => r.dir), call: data.actions.map((r) => r.call) };
   return (
     <div style={{ position: 'absolute', left: 14, top: 196, width: PW }}>
       <div style={{ height: 47, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 9, paddingTop: 4 }}>
@@ -176,30 +224,32 @@ export function GbpInsights({ data }: { data: GbpSummary }) {
             Last Updated: <b style={{ fontWeight: 600 }}>{data.updated}</b>
           </span>
         ) : null}
-        {data.range ? <FilterPill text={data.range} /> : null}
+        {range ? <FilterPill text={range} /> : null}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         <AreaPanel
           title="Views"
           info
           totalLabel="Total Views"
-          labels={data.views.map((r) => r.date)}
+          labels={views.labels}
+          legendFromLast={monthly}
           series={[
-            { name: 'Search - Mobile', c: INS.yellow, values: data.views.map((r) => r.sm) },
-            { name: 'Maps - Mobile', c: INS.violet, values: data.views.map((r) => r.mm) },
-            { name: 'Search - Desktop', c: INS.green, values: data.views.map((r) => r.sd) },
-            { name: 'Maps - Desktop', c: INS.blue, values: data.views.map((r) => r.md) },
+            { name: 'Search - Mobile', c: INS.yellow, values: views.sm },
+            { name: 'Maps - Mobile', c: INS.violet, values: views.mm },
+            { name: 'Search - Desktop', c: INS.green, values: views.sd },
+            { name: 'Maps - Desktop', c: INS.blue, values: views.md },
           ]}
           legend={['Search - Desktop', 'Search - Mobile', 'Maps - Desktop', 'Maps - Mobile']}
         />
         <AreaPanel
           title="Actions"
           totalLabel="Total Actions"
-          labels={data.actions.map((r) => r.date)}
+          labels={actions.labels}
+          legendFromLast={monthly}
           series={[
-            { name: 'Request direction', c: INS.yellow, values: data.actions.map((r) => r.dir) },
-            { name: 'Website clicks', c: INS.green, values: data.actions.map((r) => r.web) },
-            { name: 'Call you', c: INS.blue, values: data.actions.map((r) => r.call) },
+            { name: 'Request direction', c: INS.yellow, values: actions.dir },
+            { name: 'Website clicks', c: INS.green, values: actions.web },
+            { name: 'Call you', c: INS.blue, values: actions.call },
           ]}
           legend={['Website clicks', 'Request direction', 'Call you']}
         />

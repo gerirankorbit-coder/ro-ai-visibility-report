@@ -3,7 +3,7 @@ import { toneForStatus, type GbpSummary, type GbpTileKey, type TileTone } from '
 import { useReport } from './ReportContext';
 
 import { GBP_H, GBP_H_FULL, GBP_W } from '@/lib/constants';
-import { GbpInsights } from './GbpInsights';
+import { buildTrend, GbpInsights, type MonthTotals } from './GbpInsights';
 
 /** Colours sampled from the BrightLocal summary (red, green, grey) and the Word report (orange). */
 export const TONES: Record<TileTone, { bg: string; bar: string; ink: string; label: string }> = {
@@ -79,7 +79,7 @@ function Tile({ k, label, status, tone }: { k: GbpTileKey; label: string; status
 }
 
 /** The GBP Summary block (pure view): gradient "Summary" chip, location, website and four tiles. */
-export function GbpSummaryView({ data, location, website }: { data: GbpSummary; location: string; website: string }) {
+export function GbpSummaryView({ data, location, website, trend }: { data: GbpSummary; location: string; website: string; trend?: MonthTotals[] }) {
   const d = data;
   return (
     <div className="gbp-summary bg-white" style={{ width: GBP_W, height: d.showInsights ? GBP_H_FULL : GBP_H, position: 'relative', color: '#111' }}>
@@ -118,14 +118,14 @@ export function GbpSummaryView({ data, location, website }: { data: GbpSummary; 
           <Tile key={t.key} k={t.key} label={t.label} status={d[t.key].status} tone={toneForStatus(d[t.key].status, d[t.key].tone)} />
         ))}
       </div>
-      {d.showInsights ? <GbpInsights data={d} /> : null}
+      {d.showInsights ? <GbpInsights data={d} trend={trend} /> : null}
     </div>
   );
 }
 
 /** The GBP Summary block for the current report month (location/website fall back to the client). */
 export function GbpSummaryBlock() {
-  const { report, current } = useReport();
+  const { report, current, months } = useReport();
   const d = current.gbp_summary;
-  return <GbpSummaryView data={d} location={d.location || report.client.locality} website={d.website || report.client.website} />;
+  return <GbpSummaryView data={d} trend={buildTrend(months, current)} location={d.location || report.client.locality} website={d.website || report.client.website} />;
 }
