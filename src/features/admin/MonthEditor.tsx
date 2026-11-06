@@ -11,6 +11,7 @@ import { FormGroup } from './BusinessInfoForm';
 import { LivePreview } from './LivePreview';
 import { SaveStatus } from './SaveStatus';
 import { GbpSummaryView, TILES, TONES } from '@/features/report/GbpSummary';
+import { GbpInsightsEditor } from './GbpInsightsEditor';
 import { TILE_STATUSES, toneForStatus } from '@/types/schema';
 import { AddMonthDialog, type AddMonthChoice } from './AddMonthDialog';
 import { useAutosave } from './useAutosave';
@@ -187,7 +188,11 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
                 );
               })}
             </div>
-            <div className="overflow-x-auto border border-line bg-white">
+            <div>
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">Charts under the tiles (Views, Actions, Phone calls)</div>
+              <GbpInsightsEditor data={draft.gbp_summary} onChange={(fn) => up((m) => ({ ...m, gbp_summary: fn(m.gbp_summary) }))} />
+            </div>
+            <div className="max-h-[560px] overflow-auto border border-line bg-white">
               <GbpSummaryView data={draft.gbp_summary} location={draft.gbp_summary.location || client.locality} website={draft.gbp_summary.website || client.website} />
             </div>
           </div>

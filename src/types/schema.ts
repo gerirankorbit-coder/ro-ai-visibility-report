@@ -103,6 +103,13 @@ export const GbpSummarySchema = z.object({
   rank: TileSchema(),
   gbp: TileSchema(),
   onsite: TileSchema(),
+  /** Insights charts under the tiles (Views, Actions, Phone calls), entered manually. */
+  showInsights: z.boolean().default(true),
+  updated: z.string().max(60).default(''),
+  range: z.string().max(40).default('Last 30 Days'),
+  views: z.array(z.object({ date: z.string().max(40), sd: z.number().int().min(0), sm: z.number().int().min(0), md: z.number().int().min(0), mm: z.number().int().min(0) })).max(62).default([]),
+  actions: z.array(z.object({ date: z.string().max(40), web: z.number().int().min(0), dir: z.number().int().min(0), call: z.number().int().min(0) })).max(62).default([]),
+  calls: z.array(z.number().int().min(0)).length(7).default([0, 0, 0, 0, 0, 0, 0]),
 });
 export type GbpSummary = z.infer<typeof GbpSummarySchema>;
 export type GbpTileKey = 'links' | 'rank' | 'gbp' | 'onsite';
