@@ -41,7 +41,10 @@ function PageViewer({ section }: { section: SectionSlug }) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setScale(Math.min(1, el.clientWidth / w)));
+    const ro = new ResizeObserver(() => {
+      const next = Math.round(Math.min(1, el.clientWidth / w) * 1000) / 1000;
+      setScale((prev) => (Math.abs(prev - next) > 0.002 ? next : prev));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [w]);
@@ -95,6 +98,7 @@ export function ReportShell({ banner }: { banner?: ReactNode }) {
         </nav>
       </header>
       <main className="px-4 py-8">
+        <StarterNotice />
         <PageViewer section={section} />
         <p className="no-capture mx-auto mt-4 max-w-[960px] text-center text-[11.5px] text-muted">
           {section === 'gbp' ? (
@@ -108,6 +112,17 @@ export function ReportShell({ banner }: { banner?: ReactNode }) {
           )}
         </p>
       </main>
+    </div>
+  );
+}
+
+/** Staff-only reminder when the current month still holds starter-template values (never captured). */
+function StarterNotice() {
+  const { current, mode } = useReport();
+  if (mode !== 'preview' || !current.starter) return null;
+  return (
+    <div role="alert" className="no-capture mx-auto mb-4 max-w-[960px] border-l-[3px] border-warn bg-[#FFF7EC] px-4 py-3 text-[12.5px]">
+      <b>Starter values:</b> this month still has the sample baseline numbers from the starter template. Replace them with the client&apos;s real numbers (Monthly data) before sending.
     </div>
   );
 }

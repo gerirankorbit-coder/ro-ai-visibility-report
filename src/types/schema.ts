@@ -155,6 +155,10 @@ export const MonthSchema = z.object({
   note: z.string().nullable().transform((v) => v ?? ''),
   /** GBP Summary tiles for this month. */
   gbp_summary: GbpSummarySchema.default({}),
+  /** Frozen: the server rejects edits and deletes until unlocked. */
+  locked: z.boolean().default(false),
+  /** Pre-filled from the starter template; numbers still need replacing with real ones. */
+  starter: z.boolean().default(false),
   updated_at: z.string().nullable().optional(),
 });
 export type Month = z.infer<typeof MonthSchema>;

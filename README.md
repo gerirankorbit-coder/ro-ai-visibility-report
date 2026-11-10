@@ -97,6 +97,7 @@ Open your project's **SQL Editor** and run, in order:
 2. `supabase/migrations/0002_private_password_gate.sql`: removes every access path for the public
    `anon` and `authenticated` roles. Only the server's service key can read or write data.
 3. `supabase/migrations/0003_gbp_summary.sql`: adds the per-month GBP Summary tiles (`months.gbp_summary`).
+4. `supabase/migrations/0004_month_lock_starter.sql`: adds `months.locked` and `months.starter`.
 
 Both files are safe to run again. If you already ran an older `0001`, just run `0002`.
 
@@ -200,6 +201,25 @@ footer. Exports are captured at 3× (2880 × 3720 px), which stays sharp in Word
 ### Changing the password
 
 Update `SITE_PASSWORD` in Vercel and redeploy. Every existing session stops working immediately.
+
+### Starter template for new clients
+
+When you create a client, the tool also creates its first month (last calendar month) with
+**starter values**. These are sample baseline numbers in typical first-report ranges, slightly
+different each time, and the month is saved as a draft. Until you press **Values checked**:
+- the Monthly data form shows a "Starter values" banner;
+- the client preview shows a staff-only reminder that is never captured in screenshots.
+
+The **+ Add month** dialog also offers "Starter template" as a starting point.
+
+### Locking a month
+
+The round lock button in the bottom-right corner of **Monthly data** freezes the selected month.
+- **While locked:** every field, slider and switch is disabled, and the month cannot be deleted.
+  The server enforces this too: `months.update` and `months.delete` return 409 while a month is
+  locked, and only `months.setLock` changes the lock.
+- **Unlocking:** click the button again.
+- **Copies:** a month added as a copy of a locked month starts unlocked.
 
 ### Admin autosave
 

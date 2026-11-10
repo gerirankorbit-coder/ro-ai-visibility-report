@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Button, IndexTable, Modal, StatusChip, TextInput, TextLink, useToast } from '@/components/ui';
-import { createClientRow, listClients, type ClientListRow } from '@/lib/api';
+import { createClientRow, createMonth, listClients, type ClientListRow } from '@/lib/api';
+import { previousMonthPeriod, starterMonthInput } from '@/lib/starter';
 import { newClientInput } from '@/lib/defaults';
 import { monthKey, monthLabel } from '@/lib/format';
 import { aiReadiness } from '@/lib/metrics';
@@ -17,10 +18,15 @@ export default function ClientList() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const create = useMutation({
-    mutationFn: () => createClientRow({ ...newClientInput(), name: name.trim(), category: category.trim() }),
+    mutationFn: async () => {
+      const c = await createClientRow({ ...newClientInput(), name: name.trim(), category: category.trim() });
+      // Start every new client with a first month pre-filled from the starter template.
+      await createMonth(c.id, starterMonthInput(previousMonthPeriod()));
+      return c;
+    },
     onSuccess: (c) => {
       void qc.invalidateQueries({ queryKey: ['clients'] });
-      toast(`${c.name} saved. Add the business details, then the first month.`);
+      toast(`${c.name} saved with a starter month. Replace the starter values with real numbers.`);
       setOpen(false);
       setName('');
       setCategory('');
@@ -110,7 +116,7 @@ export default function ClientList() {
         >
           <TextInput label="Business name" required autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Ridge Runner Construction, LLC" />
           <TextInput label="Category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Construction service" />
-          <p className="text-[12px] text-ink-2">The client is saved permanently. You can fill in address, hours and services next, then add monthly data.</p>
+          <p className="text-[12px] text-ink-2">The client is saved permanently, with a first month ({monthLabel(previousMonthPeriod().slice(0, 7))}) pre-filled from the starter template. Fill in address, hours and services next, then replace the starter numbers with real ones.</p>
           <button type="submit" hidden />
         </form>
       </Modal>

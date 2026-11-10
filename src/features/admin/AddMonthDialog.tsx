@@ -6,6 +6,8 @@ import type { Month } from '@/types/schema';
 export interface AddMonthChoice {
   key: string; // YYYY-MM
   copyFrom: Month | null;
+  /** Pre-fill with the starter template (sample baseline values). */
+  starter?: boolean;
 }
 
 function previousCalendarMonth(): string {
@@ -20,11 +22,11 @@ export function AddMonthDialog({ open, onClose, months, onAdd, busy }: { open: b
   const latest = months[months.length - 1] ?? null;
   const suggested = latest ? nextMonthKey(monthKey(latest.period)) : previousCalendarMonth();
   const [key, setKey] = useState(suggested);
-  const [source, setSource] = useState<string>(latest?.id ?? 'blank');
+  const [source, setSource] = useState<string>(latest?.id ?? 'starter');
   useEffect(() => {
     if (open) {
       setKey(suggested);
-      setSource(latest?.id ?? 'blank');
+      setSource(latest?.id ?? 'starter');
     }
   }, [open, suggested, latest?.id]);
 
@@ -42,7 +44,7 @@ export function AddMonthDialog({ open, onClose, months, onAdd, busy }: { open: b
           <Button size="sm" variant="quiet" arrow="none" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" arrow="right" disabled={!valid || busy} onClick={() => onAdd({ key, copyFrom })}>
+          <Button size="sm" arrow="right" disabled={!valid || busy} onClick={() => onAdd({ key, copyFrom, starter: source === 'starter' })}>
             {busy ? 'Adding…' : `Add ${valid ? monthLabel(key) : 'month'}`}
           </Button>
         </>
@@ -62,12 +64,15 @@ export function AddMonthDialog({ open, onClose, months, onAdd, busy }: { open: b
                 {m.id === latest?.id ? ' (latest, recommended)' : ''}
               </option>
             ))}
+          <option value="starter">Starter template (sample baseline values)</option>
           <option value="blank">Blank month (all zeros)</option>
         </SelectInput>
         <p className="text-[12px] leading-relaxed text-ink-2">
           {copyFrom
             ? `All numbers, listings and community data are copied from ${monthLabel(monthKey(copyFrom.period))}, so you only change what moved this month. The highlight note starts empty and the month starts as a draft.`
-            : 'Every value starts at zero and all 12 standard directories are listed as Queued.'}
+            : source === 'starter'
+              ? 'Fills the month with sample baseline numbers (different each time), like a typical first report. The month is marked “Starter values” until you replace them with real numbers.'
+              : 'Every value starts at zero and all 12 standard directories are listed as Queued.'}
         </p>
       </div>
     </Modal>
