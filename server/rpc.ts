@@ -20,6 +20,7 @@ const Body = z.discriminatedUnion('op', [
   z.object({ op: z.literal('months.create'), clientId: uuid, input: MonthInput }),
   z.object({ op: z.literal('months.update'), id: uuid, input: MonthInput }),
   z.object({ op: z.literal('months.delete'), id: uuid }),
+  z.object({ op: z.literal('months.setLock'), id: uuid, locked: z.boolean() }),
   z.object({ op: z.literal('logo.upload'), clientId: uuid, contentType: z.enum(LOGO_TYPES), base64: z.string().max(3_000_000) }),
   z.object({ op: z.literal('logo.get'), path: z.string().regex(/^[0-9a-f-]{36}\/logo-\d+\.(png|svg)$/) }),
 ]);
@@ -41,6 +42,11 @@ function encodeBase64(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(s);
+}
+
+async function isLocked(db: SupabaseClient, id: string): Promise<boolean> {
+  const { data } = await db.from('months').select('locked').eq('id', id).maybeSingle();
+  return Boolean((data as { locked?: boolean } | null)?.locked);
 }
 
 /** Single authenticated data endpoint. Every call re-checks the session (defence in depth). */
@@ -77,12 +83,19 @@ export async function handleRpc(req: Request, env: GateEnv, db: SupabaseClient |
       case 'months.list':
         return json(200, { data: unwrap(await db.from('months').select('*').eq('client_id', body.clientId).order('period')) });
       case 'months.create':
-        return json(200, { data: unwrap(await db.from('months').insert({ client_id: body.clientId, ...body.input }).select('*').single()) });
-      case 'months.update':
-        return json(200, { data: unwrap(await db.from('months').update({ ...body.input, updated_at: new Date().toISOString() }).eq('id', body.id).select('*').single()) });
+        return json(200, { data: unwrap(await db.from('months').insert({ client_id: body.clientId, ...body.input, locked: false }).select('*').single()) });
+      case 'months.update': {
+        // A locked month cannot be changed; lock state only changes through months.setLock.
+        if (await isLocked(db, body.id)) return json(409, { error: 'This month is locked. Unlock it to make changes.' });
+        const { locked: _ignored, ...input } = body.input;
+        return json(200, { data: unwrap(await db.from('months').update({ ...input, updated_at: new Date().toISOString() }).eq('id', body.id).select('*').single()) });
+      }
       case 'months.delete':
+        if (await isLocked(db, body.id)) return json(409, { error: 'This month is locked. Unlock it before deleting.' });
         unwrap(await db.from('months').delete().eq('id', body.id));
         return json(200, { data: null });
+      case 'months.setLock':
+        return json(200, { data: unwrap(await db.from('months').update({ locked: body.locked }).eq('id', body.id).select('*').single()) });
       case 'logo.upload': {
         const bytes = decodeBase64(body.base64);
         if (bytes.length > 2 * 1024 * 1024) return json(413, { error: 'Logo must be 2 MB or smaller.' });

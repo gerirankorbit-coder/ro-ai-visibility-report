@@ -24,6 +24,8 @@ export function emptyMonthInput(period: string): MonthInput {
     forum: defaultForum(),
     note: '',
     gbp_summary: GbpSummarySchema.parse({}),
+    locked: false,
+    starter: false,
   };
 }
 
@@ -72,6 +74,8 @@ export function normalizeMonth(row: Record<string, unknown>): Month {
     forum: { ...forum, weekly: [0, 1, 2, 3].map((i) => Number(weekly[i] ?? 0)) },
     note: (row.note as string | null) ?? '',
     gbp_summary: isObj(row.gbp_summary) ? row.gbp_summary : {},
+    locked: Boolean(row.locked),
+    starter: Boolean(row.starter),
     updated_at: (row.updated_at as string | null) ?? null,
   };
   return MonthSchema.parse(candidate);

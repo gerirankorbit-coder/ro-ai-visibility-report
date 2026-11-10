@@ -102,6 +102,8 @@ function buildMonths(clientId: string, seed: string, startKey: string, n: number
       nap_fields, entity_parts, engines, work, sources, forum,
       note: notes[i] ?? '',
       gbp_summary: demoGbpSummary(clientId, k, i, n),
+      locked: false,
+      starter: false,
       updated_at: null,
     });
     k = nextMonthKey(k);

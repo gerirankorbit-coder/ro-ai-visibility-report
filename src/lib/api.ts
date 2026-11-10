@@ -91,6 +91,11 @@ export async function deleteMonth(id: string): Promise<void> {
   await rpc('months.delete', { id });
 }
 
+/** Lock (freeze) or unlock a month. While locked, the server rejects edits and deletes. */
+export async function setMonthLock(id: string, locked: boolean): Promise<Month> {
+  return normalizeMonth(await rpc<Record<string, unknown>>('months.setLock', { id, locked }));
+}
+
 /* ------------------------------------------------------------------ */
 /* Logos (private bucket, served as data URLs through the API)         */
 /* ------------------------------------------------------------------ */

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Close, IconButton, TextInput, NumberInput, SelectInput, Slider, TextArea, Toggle, inputCls, useToast } from '@/components/ui';
-import { createMonth, deleteMonth, updateMonth } from '@/lib/api';
+import { createMonth, deleteMonth, setMonthLock, updateMonth } from '@/lib/api';
 import { ENGINES, ENTITY, NAP_FIELDS, PHASES, STATUS_LABEL, WORK } from '@/lib/constants';
 import { emptyMonthInput, monthToInput } from '@/lib/defaults';
 import { monthKey, monthLabel } from '@/lib/format';
@@ -15,6 +15,7 @@ import { GbpInsightsEditor } from './GbpInsightsEditor';
 import { buildTrend } from '@/features/report/GbpInsights';
 import { TILE_STATUSES, toneForStatus } from '@/types/schema';
 import { AddMonthDialog, type AddMonthChoice } from './AddMonthDialog';
+import { starterMonthInput } from '@/lib/starter';
 import { useAutosave } from './useAutosave';
 
 export function MonthEditor({ client, months }: { client: Client; months: Month[] }) {
@@ -42,15 +43,32 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
       replaceInCache(saved);
       void qc.invalidateQueries({ queryKey: ['clients'] });
     },
-    { resetKey: draft?.id ?? 'none' },
+    // Re-baseline after switching months or locking/unlocking (lock state is saved separately).
+    { resetKey: `${draft?.id ?? 'none'}:${draft?.locked ? 'L' : 'U'}` },
   );
+
+  const lock = useMutation({
+    mutationFn: async ({ id, locked }: { id: string; locked: boolean }) => {
+      if (locked && !(await save.saveNow())) throw new Error('Could not save the latest changes, so the month was not locked.');
+      return setMonthLock(id, locked);
+    },
+    onSuccess: (m) => {
+      replaceInCache(m);
+      setDraft((d) => (d && d.id === m.id ? { ...d, locked: m.locked } : d));
+      toast(m.locked ? `${monthLabel(monthKey(m.period))} locked. Nothing can be changed until it is unlocked.` : `${monthLabel(monthKey(m.period))} unlocked. You can edit it again.`);
+    },
+    onError: (e) => toast(e instanceof Error ? e.message : 'Could not change the lock'),
+  });
 
   const [adding, setAdding] = useState(false);
   const add = useMutation({
-    mutationFn: async ({ key: k, copyFrom }: AddMonthChoice) => {
+    mutationFn: async ({ key: k, copyFrom, starter }: AddMonthChoice) => {
       await save.saveNow();
       const period = `${k}-01`;
-      return createMonth(client.id, copyFrom ? { ...monthToInput(copyFrom), period, published: false, note: '' } : emptyMonthInput(period));
+      return createMonth(
+        client.id,
+        copyFrom ? { ...monthToInput(copyFrom), period, published: false, note: '', locked: false, starter: false } : starter ? starterMonthInput(period) : emptyMonthInput(period),
+      );
     },
     onSuccess: async (m) => {
       await qc.invalidateQueries({ queryKey: key });
@@ -88,6 +106,7 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
   const setForum = <K extends keyof Forum>(k: K, v: Forum[K]) => up((m) => ({ ...m, forum: { ...m.forum, [k]: v } }));
   const warnings = monthWarnings(draft);
   const f = draft.forum;
+  const locked = draft.locked;
 
   return (
     <div className="grid grid-cols-1 gap-8 min-[1440px]:grid-cols-[minmax(0,1fr)_minmax(480px,40%)]">
@@ -109,9 +128,9 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
             + Add month
           </Button>
           <AddMonthDialog open={adding} onClose={() => setAdding(false)} months={months} busy={add.isPending} onAdd={(c) => add.mutate(c)} />
-          <div className="flex h-9 items-center">
+          <fieldset disabled={locked} className="flex h-9 min-w-0 items-center disabled:opacity-60">
             <Toggle label={draft.published ? 'Published · visible to client' : 'Draft · hidden from client'} checked={draft.published} onChange={(v) => up((m) => ({ ...m, published: v }))} />
-          </div>
+          </fieldset>
           <div className="ml-auto flex h-9 items-center gap-2">
             {confirmDelete ? (
               <>
@@ -124,7 +143,7 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
                 </Button>
               </>
             ) : (
-              <Button size="sm" variant="quiet" arrow="none" onClick={() => setConfirmDelete(true)}>
+              <Button size="sm" variant="quiet" arrow="none" onClick={() => setConfirmDelete(true)} disabled={locked} title={locked ? 'Unlock the month to delete it' : undefined}>
                 Delete month
               </Button>
             )}
@@ -146,9 +165,38 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
             </div>
           ))}
           <div className="ml-auto">
-            <SaveStatus state={save} label="Save month" onSave={() => void save.saveNow().then((ok) => ok && toast(`${monthLabel(monthKey(draft.period))} saved`))} />
+            {locked ? (
+              <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ink">
+                <LockIcon locked /> Locked
+              </span>
+            ) : (
+              <SaveStatus state={save} label="Save month" onSave={() => void save.saveNow().then((ok) => ok && toast(`${monthLabel(monthKey(draft.period))} saved`))} />
+            )}
           </div>
         </div>
+
+        {locked ? (
+          <div role="status" className="mt-4 flex items-start gap-3 border-l-[3px] border-ink bg-white px-4 py-3 text-[12.5px]">
+            <span className="mt-[3px] shrink-0">
+              <LockIcon locked />
+            </span>
+            <span>
+              <b>{monthLabel(monthKey(draft.period))} is locked.</b> All values are frozen and nobody can change or delete this month. Use the lock button in the bottom-right corner to unlock it.
+            </span>
+          </div>
+        ) : null}
+        {draft.starter ? (
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 border-l-[3px] border-warn bg-[#FFF7EC] px-4 py-3 text-[12.5px]">
+            <span className="max-w-[80ch]">
+              <b>Starter values.</b> This month was pre-filled from the starter template so the report is not empty. These are sample baseline numbers, not this client&apos;s real data. Replace them with your audit numbers before sending the report.
+            </span>
+            <Button size="sm" variant="outline" arrow="none" disabled={locked} onClick={() => up((m) => ({ ...m, starter: false }))}>
+              Values checked
+            </Button>
+          </div>
+        ) : null}
+
+        <fieldset disabled={locked} className="min-w-0 transition-opacity disabled:cursor-not-allowed disabled:opacity-70">
 
         <FormGroup title="GBP Summary" aside="The Summary block with four status tiles. Pick OK, Good or Poor for each tile; the colour follows (OK = orange, Good = green, Poor = red). Location and Website use the client's details unless you type something else.">
           <div className="flex flex-col gap-5">
@@ -335,6 +383,20 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
         <FormGroup title="Monthly highlight" aside="Shown to the client on the Overview and in Milestones.">
           <TextArea label="Highlight (visible to client)" id="m-note" rows={4} value={draft.note} onChange={(e) => up((m) => ({ ...m, note: e.target.value }))} />
         </FormGroup>
+        </fieldset>
+
+        {/* Lock / unlock, fixed in the bottom-right corner. */}
+        <button
+          type="button"
+          onClick={() => lock.mutate({ id: draft.id, locked: !locked })}
+          disabled={lock.isPending}
+          aria-pressed={locked}
+          aria-label={locked ? `Unlock ${monthLabel(monthKey(draft.period))}` : `Lock ${monthLabel(monthKey(draft.period))}`}
+          title={locked ? 'Locked: click to unlock and edit' : 'Unlocked: click to lock this month'}
+          className={`no-capture fixed bottom-3 right-3 z-50 flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_2px_8px_rgba(0,0,0,0.18)] transition-colors disabled:opacity-60 ${locked ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink'}`}
+        >
+          <LockIcon locked={locked} size={18} />
+        </button>
       </div>
 
       <div className="hidden min-[1440px]:block">
@@ -343,5 +405,15 @@ export function MonthEditor({ client, months }: { client: Client; months: Month[
         </div>
       </div>
     </div>
+  );
+}
+
+/** Padlock icon (closed when locked, open when unlocked). */
+function LockIcon({ locked, size = 14 }: { locked: boolean; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
+      <rect x="4" y="9" width="12" height="9" rx="1.5" fill={locked ? 'currentColor' : 'none'} />
+      <path d={locked ? 'M6.5 9V6.5a3.5 3.5 0 0 1 7 0V9' : 'M6.5 9V6.5a3.5 3.5 0 0 1 6.8-1.2'} />
+    </svg>
   );
 }
