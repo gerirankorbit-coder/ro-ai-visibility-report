@@ -32,6 +32,8 @@
 
 @layer base {
   html {
+    /* Keep the page width stable when the page scrollbar appears (prevents scale feedback loops). */
+    scrollbar-gutter: stable;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;

@@ -41,7 +41,10 @@ function PageViewer({ section }: { section: SectionSlug }) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setScale(Math.min(1, el.clientWidth / w)));
+    const ro = new ResizeObserver(() => {
+      const next = Math.round(Math.min(1, el.clientWidth / w) * 1000) / 1000;
+      setScale((prev) => (Math.abs(prev - next) > 0.002 ? next : prev));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [w]);

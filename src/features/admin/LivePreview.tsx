@@ -15,9 +15,19 @@ export function LivePreview({ client, months, current }: { client: Client; month
   const [h, setH] = useState(0);
 
   useEffect(() => {
+    // The pane reserves its scrollbar gutter (scrollbar-gutter: stable), so its width no longer
+    // changes when the scrollbar appears. Without that, a scrollbar showing up shrank the scale,
+    // which removed the scrollbar, which grew the scale again: an endless shake. Small changes
+    // are also ignored as a second guard.
     const ro = new ResizeObserver(() => {
-      if (outer.current) setScale(outer.current.clientWidth / SHEET_W);
-      if (inner.current) setH(inner.current.offsetHeight);
+      if (outer.current) {
+        const next = Math.round((outer.current.clientWidth / SHEET_W) * 1000) / 1000;
+        setScale((prev) => (Math.abs(prev - next) > 0.002 ? next : prev));
+      }
+      if (inner.current) {
+        const next = inner.current.offsetHeight;
+        setH((prev) => (prev === next ? prev : next));
+      }
     });
     if (outer.current) ro.observe(outer.current);
     if (inner.current) ro.observe(inner.current);
@@ -34,7 +44,7 @@ export function LivePreview({ client, months, current }: { client: Client; month
         </span>
         <UnderlineTabs label="Preview section" value={section} onChange={setSection} items={SECTIONS.map((s) => ({ value: s.slug, title: s.nav }))} className="!gap-4" />
       </div>
-      <div ref={outer} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div ref={outer} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollbarGutter: 'stable' }}>
         <div style={{ height: h * scale }}>
           <div ref={inner} style={{ width: SHEET_W, transform: `scale(${scale})`, transformOrigin: '0 0', pointerEvents: 'none' }} {...{ inert: '' }} aria-hidden="true">
             <ReportProvider report={report} basePath="#" mode="preview" monthOverride={monthKey(current.period)}>
